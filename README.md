@@ -57,24 +57,6 @@ Add an anchor to the address:
 
 Example: `index.html#frettage`.
 
-## Usage
-
-**Locally:** download or clone the repository, then open `index.html` in any recent browser (Firefox, Chrome, Edge, Safari). It works offline; without an internet connection the page simply uses system fonts instead of Google Fonts.
-
-```bash
-git clone https://github.com/<your-username>/residual-stress-animations.git
-cd residual-stress-animations
-# then open index.html
-```
-
-## Publishing with GitHub Pages
-
-1. Push the repository to GitHub.
-2. Go to **Settings → Pages**.
-3. Under **Source**, choose **Deploy from a branch**, branch `main`, folder `/ (root)`.
-4. After a minute, the page is online at `https://<your-username>.github.io/residual-stress-animations/`.
-
-The empty `.nojekyll` file tells GitHub Pages to serve the files as they are.
 
 ## Repository structure
 
@@ -99,12 +81,6 @@ residual-stress-animations/
 - **`compatibility_derivation`**: how to obtain the compatibility equation from ε_ij = ½(u_i,j + u_j,i), in 2D, then in 3D, and through the rotation tensor.
 
 To recompile: `pdflatex compatibility_proof.tex`.
-
-## Visit counter
-
-`index.html` includes a [GoatCounter](https://www.goatcounter.com/) script that counts page views on [rkubler.goatcounter.com](https://rkubler.goatcounter.com/). GoatCounter uses no cookies and collects no personal data. Clicks on each tab are also recorded as events (`tab-bar`, `tab-frettage`, …), to see which cases are used most.
-
-If you fork this repository, replace `rkubler` with your own GoatCounter code at the end of `index.html`, or delete the script.
 
 ## Models and assumptions
 
