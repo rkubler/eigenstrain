@@ -71,9 +71,12 @@ ol.steps li.on button::before{background:var(--accent);border-color:var(--accent
 .caption p{margin:0 0 6px}
 .caption .eq{font-family:var(--mono);font-size:13px;background:var(--neutral);padding:1px 5px;border-radius:4px;white-space:nowrap}
 .params{display:grid;gap:10px}
-.param label{display:flex;justify-content:space-between;font-size:14px}
-.param output{font:500 13px var(--mono)}
+.param label{display:block;font-size:14px}
+.param output{font:500 13px var(--mono);float:right}
 .param input{width:100%;accent-color:var(--accent)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.segb{font-size:13px;padding:6px 10px}
+.segb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
 dl.read{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0;font:400 13px var(--mono);font-variant-numeric:tabular-nums}
 dl.read dt{color:var(--muted)}
 dl.read dd{margin:0;text-align:right}
@@ -103,7 +106,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     <button class="tab" role="tab" id="tab-1" aria-selected="false" data-k="1"><span>2</span>Constrained bar</button>
     <button class="tab" role="tab" id="tab-3" aria-selected="false" data-k="3"><span>3</span>Elastoplastic bending</button>
     <button class="tab" role="tab" id="tab-2" aria-selected="false" data-k="2"><span>4</span>Frettage of pipes</button>
-    <button class="tab" role="tab" id="tab-4" aria-selected="false" data-k="4"><span>5</span>Bimetallic strip</button>
+    <button class="tab" role="tab" id="tab-4" aria-selected="false" data-k="4"><span>5</span>Bimetal &amp; thin film</button>
     <button class="tab" role="tab" id="tab-5" aria-selected="false" data-k="5"><span>6</span>Elastoplastic composite</button>
   </div>
 
@@ -219,8 +222,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   <section class="scene" id="s4" role="tabpanel" aria-labelledby="tab-4" hidden>
     <div class="main">
       <div class="panel">
-        <svg class="fig stage" viewBox="0 0 800 300" role="img" aria-label="Bimetallic strip heated and bending"></svg>
-        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:var(--heat)"></i>heated</span><span>strains ×60 · deflection ×30 · thickness not to scale</span></div>
+        <svg class="fig stage" viewBox="0 0 800 300" role="img" aria-label="Bimetallic strip or thin film on a wafer, heated and bending"></svg>
+        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:var(--heat)"></i>heated</span><span id="s4-amp">strains ×60 · deflection ×30 · thickness not to scale</span></div>
       </div>
       <div class="panel controls">
         <button class="btn primary play" type="button" id="p4-play">Play</button>
@@ -233,8 +236,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       <div class="panel caption" aria-live="polite"></div>
       <div class="panel params">
         <h3>Parameters</h3>
+        <div class="seg" role="group" aria-label="Configuration"><button type="button" class="btn segb" id="s4-mode-strip" aria-pressed="true">Bimetallic strip</button><button type="button" class="btn segb" id="s4-mode-film" aria-pressed="false">Thin film on substrate</button></div>
         <div class="param"><label for="s4-dt">Temperature rise ΔT <output id="s4-dt-o"></output></label><input type="range" id="s4-dt" min="25" max="250" step="25" value="150"></div>
-        <p class="note">Strip 60 mm long · steel (bottom): 1 mm, E = 210 GPa, α = 12×10⁻⁶ /K · copper (top): 1 mm, E = 120 GPa, α = 17×10⁻⁶ /K · elastic</p>
+        <div class="param" id="s4-tf-wrap" hidden><label for="s4-tf">Film thickness t<sub>f</sub> <output id="s4-tf-o"></output></label><input type="range" id="s4-tf" min="0.5" max="50" step="0.5" value="1"></div>
+        <p class="note" id="s4-note">Strip 60 mm long · steel (bottom): 1 mm, E = 210 GPa, α = 12×10⁻⁶ /K · copper (top): 1 mm, E = 120 GPa, α = 17×10⁻⁶ /K · elastic beam</p>
       </div>
     </aside>
   </section>
@@ -267,7 +272,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     </aside>
   </section>
 
-  <footer>Bar problem after Korsunsky (2017), as in the course slides. The other cases use classical solutions: Lamé thick cylinders for frettage, a rectangular elastic–perfectly plastic section for bending, Timoshenko-type beam theory for the bimetallic strip, and an iso-strain model for the composite.<br><br><b>Author:</b> Dr Régis Kubler, Arts et Métiers Institute of Technology. Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.<br><b>Cite as:</b> Kubler, R. (2026). <i>Eigenstrain &amp; Residual Stress Simulator</i>. Arts et Métiers Institute of Technology. Zenodo. DOI: to be given. · MIT License</footer>
+  <footer>Bar problem after Korsunsky (2017), as in the course slides. The other cases use classical solutions: Lamé thick cylinders for frettage, a rectangular elastic–perfectly plastic section for bending, Timoshenko-type beam theory for the bimetallic strip and Stoney's formula for the thin film, and an iso-strain model for the composite.<br><br><b>Author:</b> Dr Régis Kubler, Arts et Métiers Institute of Technology. Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.<br><b>Cite as:</b> Kubler, R. (2026). <i>Eigenstrain &amp; Residual Stress Simulator</i>. Arts et Métiers Institute of Technology. Zenodo. DOI: to be given. · MIT License</footer>
 </div>
 
 <script>
@@ -728,66 +733,107 @@ const S3=(function(){
 })();
 
 /* =========================================================
-   Scene 5 — bimetallic strip
+   Scene 5 — bimetallic strip / thin film on substrate (Stoney)
    ========================================================= */
 const S4=(function(){
   const root=document.getElementById('s4'), svg=root.querySelector('.stage');
-  const L1={name:'Steel',E:210000,a:12e-6,y0:0,y1:1}, L2={name:'Copper',E:120000,a:17e-6,y0:1,y1:2};
-  let dT=150;
+  let mode='strip', dT=150, tfum=1;
   bindRange('s4-dt',v=>v+' °C',v=>{dT=v;P.refresh();});
-  function solve(){
+  bindRange('s4-tf',v=>v+' µm',v=>{tfum=v;P.refresh();});
+  const bS=document.getElementById('s4-mode-strip'), bF=document.getElementById('s4-mode-film'), tfWrap=document.getElementById('s4-tf-wrap'), note=document.getElementById('s4-note'), ampEl=document.getElementById('s4-amp');
+  function setMode(m){mode=m;bS.setAttribute('aria-pressed',m==='strip');bF.setAttribute('aria-pressed',m==='film');tfWrap.hidden=m!=='film';
+    note.innerHTML=m==='strip'?'Strip 60 mm long · steel (bottom): 1 mm, E = 210 GPa, α = 12×10⁻⁶ /K · copper (top): 1 mm, E = 120 GPa, α = 17×10⁻⁶ /K · elastic beam'
+      :'Wafer Ø 100 mm · Si substrate: 500 µm, M = E/(1−ν) = 180.6 GPa, α = 2.6×10⁻⁶ /K · Cu film: M = 181.8 GPa, α = 17×10⁻⁶ /K · biaxial moduli, elastic';
+    P.refresh();}
+  bS.addEventListener('click',()=>setMode('strip')); bF.addEventListener('click',()=>setMode('film'));
+  function cfg(){
+    if(mode==='strip')return{layers:[{name:'Steel',E:210000,a:12e-6,y0:0,y1:1,px:26},{name:'Copper',E:120000,a:17e-6,y0:1,y1:2,px:26}],half:30};
+    const tf=tfum/1000;
+    return{layers:[{name:'Si wafer',E:130000/(1-0.28),a:2.6e-6,y0:0,y1:0.5,px:46},{name:'Cu film',E:120000/(1-0.34),a:17e-6,y0:0.5,y1:0.5+tf,px:8}],half:50};
+  }
+  function solve(c){
     let A=0,B=0,C=0,NA=0,MB=0;
-    for(const l of [L1,L2]){const a=l.E*(l.y1-l.y0),b=l.E*(l.y1*l.y1-l.y0*l.y0)/2,c=l.E*(l.y1**3-l.y0**3)/3;A+=a;B+=b;C+=c;NA+=a*l.a*dT;MB+=b*l.a*dT;}
-    const det=A*C-B*B;
-    return{e0:(NA*C-B*MB)/det,k:(A*MB-B*NA)/det,ef:NA/A};
+    for(const l of c.layers){const a=l.E*(l.y1-l.y0),b=l.E*(l.y1*l.y1-l.y0*l.y0)/2,cc=l.E*(l.y1**3-l.y0**3)/3;A+=a;B+=b;C+=cc;NA+=a*l.a*dT;MB+=b*l.a*dT;}
+    const det=A*C-B*B;return{e0:(NA*C-B*MB)/det,k:(A*MB-B*NA)/det,ef:NA/A};
   }
   const sig=(l,y,e0,k)=>l.E*(e0+k*y-l.a*dT);
-  const cx=295,Lh=170,pxmm=Lh/30,ampS=60,ampD=30,yI=165,tp=26,NS=6;
+  function stoney(c){const s=c.layers[0],f=c.layers[1],ts=s.y1-s.y0,tf=f.y1-f.y0,de=(f.a-s.a)*dT;
+    return{k:6*f.E*tf*de/(s.E*ts*ts),sf:-f.E*de,sh:f.E*de*tf/ts,ts,tf,de};}
+  const nice=[1,2,5,10,20,50,100,200,500,1000,2000,5000];
+  const cx=295,Lh=170,ampS=60,yBot=200;
   let st={};
   function draw(i,k){
-    const S=solve(), e=ease(k);
-    let g='', heat=0, gap=0, kd=0, len, sg;
+    const c=cfg(), S=solve(c), e=ease(k), L=c.layers, top=L[L.length-1];
+    const pxmm=Lh/c.half;
+    // deflection amplification: fixed for the strip, adaptive (shown) for the wafer
+    let ampD=30;
+    if(mode==='film'){const raw=S.k*c.half*c.half/2*pxmm;const want=40/Math.max(raw,1e-9);ampD=nice.filter(n=>n<=want).pop()||1;}
+    ampEl.textContent=`strains ×${ampS} · deflection ×${ampD} · thickness not to scale`;
+    let heat=0,gap=0,kd=0,len,sg;
     if(i===0){len=()=>0;sg=()=>0;}
-    if(i===1){heat=e;gap=18*e;len=(l)=>ampS*l.a*dT*e;sg=()=>0;}
-    if(i===2){heat=1;gap=18*(1-e);len=(l)=>ampS*lerp(l.a*dT,S.ef,e);sg=(l,y)=>sig(l,y,S.ef,0)*e;}
+    if(i===1){heat=e;gap=18*e;len=l=>ampS*l.a*dT*e;sg=()=>0;}
+    if(i===2){heat=1;gap=18*(1-e);len=l=>ampS*lerp(l.a*dT,S.ef,e);sg=(l,y)=>sig(l,y,S.ef,0)*e;}
     if(i===3){heat=1;len=(l,y)=>ampS*(S.ef+(S.e0+S.k*y-S.ef)*e);sg=(l,y)=>sig(l,y,lerp(S.ef,S.e0,e),S.k*e);kd=S.k*e;}
-    st={i,S,e,sg};
-    const scale=Math.max(...[L1,L2].flatMap(l=>[l.y0,l.y1].map(y=>Math.max(Math.abs(sig(l,y,S.e0,S.k)),Math.abs(sig(l,y,S.ef,0))))));
+    st={i,S,e,sg,c};
+    // screen mapping of physical y
+    const scr=(y,lift)=>{let b=yBot;for(const l of L){if(y<=l.y1+1e-12){return b-(y-l.y0)/(l.y1-l.y0)*l.px-(lift||0);}b-=l.px;}return b;};
+    const fin=(l,y)=>Math.abs(sig(l,y,S.e0,S.k)), flat=(l,y)=>Math.abs(sig(l,y,S.ef,0));
+    const colLayers=mode==='film'?[L[0]]:L;
+    const scale=Math.max(...colLayers.flatMap(l=>[l.y0,l.y1].map(y=>Math.max(fin(l,y),flat(l,y)))));
+    const scaleFilm=Math.max(fin(top,top.y0),flat(top,top.y0));
     const defl=x=>{const X=(x-cx)/pxmm;return kd*X*X/2*pxmm*ampD;};
-    for(const l of [L1,L2]){
+    let g='';
+    L.forEach((l,li)=>{
+      const lift=li===L.length-1?gap:0, NS=mode==='film'&&li===1?1:6, sc=mode==='film'&&li===1?scaleFilm:scale;
       for(let j=0;j<NS;j++){
         const ya=l.y0+(l.y1-l.y0)*j/NS, yb=ya+(l.y1-l.y0)/NS, ym=(ya+yb)/2, half=Lh*(1+len(l,ym));
-        const off=l===L2?-gap:0, sa=yI-(ya-1)*tp+off, sb=yI-(yb-1)*tp+off;
-        const top=[],bot=[];
-        for(let q=0;q<=30;q++){const x=cx-half+2*half*q/30,d=defl(x);bot.push([x,sa+d]);top.push([x,sb+d]);}
-        const dd=pathOf(top.concat(bot.reverse()))+'Z', c=sFill(sg(l,ym),scale);
-        g+=`<path d="${dd}" style="fill:${c};stroke:${c};stroke-width:.6"/>`;
+        const sa=scr(ya,lift), sb=scr(yb,lift), t1=[],b1=[];
+        for(let q=0;q<=30;q++){const x=cx-half+2*half*q/30,d=defl(x);b1.push([x,sa+d]);t1.push([x,sb+d]);}
+        const dd=pathOf(t1.concat(b1.reverse()))+'Z', col=sFill(sg(l,ym),sc);
+        g+=`<path d="${dd}" style="fill:${col};stroke:${col};stroke-width:.6"/>`;
       }
-      // outline
-      const half0=Lh*(1+len(l,(l.y0+l.y1)/2)), off=l===L2?-gap:0, ya=yI-(l.y0-1)*tp+off, yb=yI-(l.y1-1)*tp+off;
-      const t=[],b=[];for(let q=0;q<=30;q++){const x=cx-half0+2*half0*q/30,d=defl(x);b.push([x,ya+d]);t.push([x,yb+d]);}
+      const h0=Lh*(1+len(l,(l.y0+l.y1)/2)), ya=scr(l.y0,lift), yb=scr(l.y1,lift), t=[],b=[];
+      for(let q=0;q<=30;q++){const x=cx-h0+2*h0*q/30,d=defl(x);b.push([x,ya+d]);t.push([x,yb+d]);}
       g+=`<path d="${pathOf(t.concat(b.reverse()))}Z" style="fill:${heat>0?'var(--heat)':'none'};fill-opacity:${.28*heat};stroke:var(--fg);stroke-opacity:.6"/>`;
-      g+=T(cx-half0-10,(ya+yb)/2+5+defl(cx-half0),l.name,'sm','end');
-    }
-    if(i===1||i===2){const h1=Lh*(1+len(L1,.5)),h2=Lh*(1+len(L2,1.5));if(Math.abs(h2-h1)>2){const y=yI-tp-gap-14;g+=`<line x1="${cx+h1}" y1="${y}" x2="${cx+h2}" y2="${y}" style="stroke:var(--accent);stroke-width:2"/>`+T(cx+Math.max(h1,h2)+8,y+4,'mismatch','sm');}}
+      g+=T(cx-h0-10,(ya+yb)/2+5+defl(cx-h0),l.name,'sm','end');
+    });
+    if(i===1||i===2){const h1=Lh*(1+len(L[0],(L[0].y0+L[0].y1)/2)),h2=Lh*(1+len(top,(top.y0+top.y1)/2));if(Math.abs(h2-h1)>2){const y=scr(top.y1,gap)-14;g+=`<line x1="${cx+h1}" y1="${y}" x2="${cx+h2}" y2="${y}" style="stroke:var(--accent);stroke-width:2"/>`+T(cx+Math.max(h1,h2)+8,y+4,'misfit','sm');}}
     if(heat>0)g+=T(cx,58,`ΔT = +${Math.round(dT*(i===1?e:1))} °C`,'lbl','middle').replace('class="lbl"','class="lbl" style="fill:var(--heat)"');
-    if(i===2&&e>.8)g+=T(cx,yI+tp+40,'flat: N = 0 but the forces form a couple, M ≠ 0','sm','middle');
-    if(i===3&&e>.8)g+=T(cx,yI+tp+64,`radius of curvature R = ${f0(1/S.k)} mm`,'lbl','middle');
-    // profile
-    const zx=655, top=70, bot=250, ymm=y=>bot-(y/2)*(bot-top), sc=105/scale;
-    g+=`<line x1="${zx}" y1="${top-10}" x2="${zx}" y2="${bot+10}" class="ax"/>`+`<line x1="${zx-130}" y1="${ymm(1)}" x2="${zx+130}" y2="${ymm(1)}" class="grid" style="stroke-dasharray:4 4"/>`;
-    g+=T(zx,top-20,'σ(y) (MPa)','sm','middle')+T(zx+8,ymm(1.12)+4,'copper','sm')+T(zx-8,ymm(0.88)+4,'steel','sm','end');
-    if(i>=2){for(const l of [L1,L2]){const p=[[zx,ymm(l.y0)]];for(let j=0;j<=20;j++){const y=lerp(l.y0,l.y1,j/20);p.push([zx+sg(l,y)*sc,ymm(y)]);}p.push([zx,ymm(l.y1)]);
+    if(i===2&&e>.8)g+=T(cx,yBot+40,mode==='film'?'flat: the film takes the whole misfit; its force forms a couple':'flat: N = 0 but the forces form a couple, M ≠ 0','sm','middle');
+    if(i===3&&e>.8){
+      if(mode==='strip')g+=T(cx,yBot+64,`radius of curvature R = ${f0(1/S.k)} mm`,'lbl','middle');
+      else{const sn=stoney(c);g+=T(cx,yBot+58,`R = ${(1/S.k/1000).toFixed(2)} m · bow over Ø100 mm = ${f0(S.k*1e4/8*1000)} µm`,'lbl','middle')+T(cx,yBot+80,`Stoney: R = ${(1/sn.k/1000).toFixed(2)} m (error ${((sn.k/S.k-1)*100).toFixed(1)} %)`,'sm','middle');}
+    }
+    // stress profile
+    const zx=655, pTop=70, pBot=250, totPx=L.reduce((s,l)=>s+l.px,0);
+    const ymm=y=>{let acc=0;for(const l of L){if(y<=l.y1+1e-12)return pBot-(acc+(y-l.y0)/(l.y1-l.y0)*l.px)/totPx*(pBot-pTop);acc+=l.px;}return pTop;};
+    const sc=105/scale;
+    g+=`<line x1="${zx}" y1="${pTop-10}" x2="${zx}" y2="${pBot+10}" class="ax"/>`+`<line x1="${zx-130}" y1="${ymm(L[0].y1)}" x2="${zx+130}" y2="${ymm(L[0].y1)}" class="grid" style="stroke-dasharray:4 4"/>`;
+    g+=T(zx,pTop-20,'σ(y) (MPa)','sm','middle');
+    if(mode==='strip')g+=T(zx+8,ymm(1.12)+4,'copper','sm')+T(zx-8,ymm(0.88)+4,'steel','sm','end');
+    else g+=T(zx+132,(ymm(L[0].y0)+ymm(L[0].y1))/2,'Si','sm','end');
+    if(i>=2){
+      L.forEach((l,li)=>{
+        if(mode==='film'&&li===1){ // film: off scale
+          const v=sg(l,(l.y0+l.y1)/2), w=Math.sign(v)*125, y0=ymm(l.y1), y1=ymm(l.y0);
+          g+=`<rect x="${Math.min(zx,zx+w)}" y="${y0}" width="${Math.abs(w)}" height="${y1-y0}" style="fill:${v<0?'var(--com)':'var(--ten)'};fill-opacity:.55"/>`;
+          g+=T(v<0?zx+8:zx-8,(y0+y1)/2+4,`film ${f0(v)} MPa (off scale)`,'sm',v<0?'start':'end');
+          return;}
+        const p=[[zx,ymm(l.y0)]];for(let j=0;j<=20;j++){const y=lerp(l.y0,l.y1,j/20);p.push([zx+sg(l,y)*sc,ymm(y)]);}p.push([zx,ymm(l.y1)]);
         g+=`<path d="${pathOf(p)}Z" style="fill:${sg(l,(l.y0+l.y1)/2)<0?'var(--com)':'var(--ten)'};fill-opacity:.3;stroke:var(--fg);stroke-width:2"/>`;
-        for(const y of [l.y0,l.y1]){const v=sg(l,y);g+=T(zx+v*sc+(v<0?-6:6),ymm(y)+(y===l.y0?-4:14),f0(v),'sm',v<0?'end':'start');}}}
-    else g+=T(zx,(top+bot)/2,'no stress','sm','middle');
+        for(const y of [l.y0,l.y1]){const v=sg(l,y);if(Math.abs(v)>.05)g+=T(zx+v*sc+(v<0?-6:6),ymm(y)+(y===l.y0?-4:14),mode==='film'?v.toFixed(1):f0(v),'sm',v<0?'end':'start');}
+      });
+    } else g+=T(zx,(pTop+pBot)/2,'no stress','sm','middle');
     svg.innerHTML=g;
   }
+  const isFilm=()=>mode==='film';
   const phases=[
-    {name:'Bonded strip, room temperature',dur:1.8,cap:()=>`<p>Two layers bonded at room temperature: steel at the bottom, copper on top, 1 mm each. No stress.</p>`},
-    {name:'Cut and heat by ΔT',dur:2.8,cap:()=>`<p>Cut the bond in thought, then heat by <b>ΔT = ${dT} °C</b>. Each layer expands freely by <span class="eq">αΔT</span>: copper (17×10⁻⁶/K) more than steel (12×10⁻⁶/K).</p><p>Free mismatch <span class="eq">ΔαΔT = ${(5e-6*dT*100).toFixed(3)} %</span>: the thermal eigenstrain is incompatible across the interface.</p>`},
-    {name:'Force equal lengths, flat',dur:2.8,cap:()=>{const S=solve();return `<p>Force both layers to the same length while keeping the strip flat: copper is compressed (<span class="eq">${f0(sig(L2,1.5,S.ef,0))} MPa</span>), steel is stretched (<span class="eq">+${f0(sig(L1,.5,S.ef,0))} MPa</span>).</p><p>The axial forces cancel (N = 0), but they act at different heights: a bending moment remains.</p>`;}},
-    {name:'Release: the strip bends',dur:3,cap:()=>{const S=solve();return `<p>Released, the strip bends until M = 0 too. The strain becomes linear across the thickness, <span class="eq">ε = ε₀ + κy</span>, and the stress jumps at the interface.</p><p>Radius of curvature <b>R = ${f0(1/S.k)} mm</b>. A thin part shows residual stress <i>and</i> a deformed shape (slide 13). Cooling back to room temperature removes everything: purely thermal eigenstrains are reversible.</p>`;}}
+    {name:'Bonded at the reference temperature',dur:1.8,cap:()=>isFilm()?`<p>A copper film, <b>${tfum} µm</b> thick, deposited on a 500 µm silicon wafer. At the deposition temperature, both are stress-free.</p><p>A wafer is a plate: the in-plane stress is equibiaxial, so the biaxial moduli <span class="eq">M = E/(1−ν)</span> replace E.</p>`:`<p>Two layers bonded at room temperature: steel at the bottom, copper on top, 1 mm each. No stress.</p>`},
+    {name:'Cut and heat by ΔT',dur:2.8,cap:()=>isFilm()?`<p>Cut the interface in thought and heat by <b>ΔT = ${dT} °C</b>. Free, the film expands by α<sub>f</sub>ΔT, the wafer by α<sub>s</sub>ΔT.</p><p>Misfit eigenstrain <span class="eq">Δε = (α_f − α_s)ΔT = ${(14.4e-6*dT*100).toFixed(3)} %</span>. The same reasoning holds for intrinsic growth stresses or epitaxial misfit.</p>`:`<p>Cut the bond in thought, then heat by <b>ΔT = ${dT} °C</b>. Each layer expands freely by <span class="eq">αΔT</span>: copper (17×10⁻⁶/K) more than steel (12×10⁻⁶/K).</p><p>Free mismatch <span class="eq">ΔαΔT = ${(5e-6*dT*100).toFixed(3)} %</span>: the thermal eigenstrain is incompatible across the interface.</p>`},
+    {name:'Force equal lengths, flat',dur:2.8,cap:()=>{const c=cfg(),S=solve(c);if(isFilm()){const sn=stoney(c);return `<p>Forced to the wafer's length, the film takes almost the whole misfit as elastic strain:</p><p><span class="eq">σ_f ≈ −M_f Δε = ${f0(sn.sf)} MPa</span></p><p>The thick wafer barely notices: <span class="eq">σ_s = −σ_f t_f/t_s = +${sn.sh.toFixed(2)} MPa</span>. The film force acts at t_s/2 from the wafer mid-plane: a couple <span class="eq">M* = σ_f t_f t_s/2</span>.</p>`;}
+      return `<p>Force both layers to the same length while keeping the strip flat: copper is compressed (<span class="eq">${f0(sig(c.layers[1],1.5,S.ef,0))} MPa</span>), steel is stretched (<span class="eq">+${f0(sig(c.layers[0],.5,S.ef,0))} MPa</span>).</p><p>The axial forces cancel (N = 0), but they act at different heights: a bending moment remains.</p>`;}},
+    {name:'Release: it bends',dur:3,cap:()=>{const c=cfg(),S=solve(c);if(isFilm()){const sn=stoney(c);return `<p>Released, the wafer bows with the bending stiffness of the substrate, <span class="eq">D = M_s t_s³/12</span>. This is <b>Stoney's formula</b>:</p><p><span class="eq">κ = 6 M_f t_f Δε / (M_s t_s²)</span></p><p>Stoney: R = ${(1/sn.k/1000).toFixed(2)} m · exact: R = ${(1/S.k/1000).toFixed(2)} m · error ${((sn.k/S.k-1)*100).toFixed(1)} %, about 3 t<sub>f</sub>/t<sub>s</sub>.</p><p>Read backwards, <span class="eq">σ_f = −M_s t_s² κ / (6 t_f)</span>: measuring the wafer curvature gives the film stress from the substrate properties only. In the wafer, σ goes linearly from −2σ̂ (bottom) to +4σ̂ (top), with σ̂ = ${sn.sh.toFixed(2)} MPa.</p>`;}
+      return `<p>Released, the strip bends until M = 0 too. The strain becomes linear across the thickness, <span class="eq">ε = ε₀ + κy</span>, and the stress jumps at the interface.</p><p>Radius of curvature <b>R = ${f0(1/S.k)} mm</b>. A thin part shows residual stress <i>and</i> a deformed shape (slide 13). Switch to <b>Thin film on substrate</b> to see the Stoney limit.</p>`;}}
   ];
   const P=Player(root,phases,draw);
   return P;
