@@ -103,7 +103,7 @@ Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.
 
 ## Cite as
 
-> Kubler, R. (2026). *Eigenstrain & Residual Stress Simulator*. Arts et Métiers Institute of Technology. Zenodo. DOI: to be given
+> Kubler, R. (2026). *Eigenstrain & Residual Stress Simulator*. Arts et Métiers Institute of Technology. Zenodo. DOI: https://doi.org/10.5281/zenodo.23322112
 
 ```bibtex
 @software{kubler_2026_eigenstrain,
@@ -113,7 +113,7 @@ Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.
   month     = oct,
   publisher = {Zenodo},
   institution = {Arts et Métiers Institute of Technology},
-  doi       = {to be given}
+  doi       = {https://doi.org/10.5281/zenodo.23322112}
 }
 ```
 
