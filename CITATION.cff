@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Eigenstrain & Residual Stress Simulator"
+abstract: "Interactive animations showing how incompatible strains (eigenstrains) generate self-equilibrated residual stresses: constrained elastoplastic bar, elastoplastic bending, frettage of pipes, bimetallic strip and elastoplastic composite."
+authors:
+  - family-names: "Kubler"
+    given-names: "Régis"
+    affiliation: "Arts et Métiers Institute of Technology"
+date-released: "2026-10-12"
+license: MIT
+keywords:
+  - residual stress
+  - eigenstrain
+  - compatibility equations
+  - elastoplasticity
+  - teaching
+# doi: "10.5281/zenodo.XXXXXXX"   # to be added once the Zenodo DOI is issued

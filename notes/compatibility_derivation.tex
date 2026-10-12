@@ -1,0 +1,118 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs}
+
+\newcommand{\eps}{\varepsilon}
+\newcommand{\teps}{\underset{\sim}{\varepsilon}}
+\newcommand{\rot}{\operatorname{rot}}
+\newcommand{\Inc}{\operatorname{Inc}}
+
+\title{From the Strain Equation to the Compatibility Equation}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{The idea: eliminate the displacement}
+
+The strain equation gives $6$ components $\eps_{ij}$ from only $3$ unknowns $u_i$.
+Differentiating enough times lets us combine the $\eps$'s so that every $u$ term cancels.
+What remains is a relation among the $\eps$'s alone: the compatibility equation.
+Throughout, a comma denotes partial differentiation, repeated indices are summed, and $\boldsymbol u$ is assumed of class $C^3$ so that derivatives commute (Schwarz's theorem).
+
+\section{The 2D case}
+
+In 2D, three strain components depend on two displacements $u$ and $v$:
+\[
+  \eps_{xx}=\frac{\partial u}{\partial x},\qquad
+  \eps_{yy}=\frac{\partial v}{\partial y},\qquad
+  2\eps_{xy}=\frac{\partial u}{\partial y}+\frac{\partial v}{\partial x}.
+\]
+Differentiate each equation so that every term contains the same third-order derivatives of $u$ and $v$:
+\[
+  \frac{\partial^2\eps_{xx}}{\partial y^2}=\frac{\partial^3 u}{\partial x\,\partial y^2},\qquad
+  \frac{\partial^2\eps_{yy}}{\partial x^2}=\frac{\partial^3 v}{\partial y\,\partial x^2},\qquad
+  2\frac{\partial^2\eps_{xy}}{\partial x\,\partial y}=\frac{\partial^3 u}{\partial x\,\partial y^2}+\frac{\partial^3 v}{\partial x^2\,\partial y}.
+\]
+The right-hand side of the third equation is the sum of the first two, hence
+\[
+  \boxed{\frac{\partial^2\eps_{xx}}{\partial y^2}+\frac{\partial^2\eps_{yy}}{\partial x^2}=2\frac{\partial^2\eps_{xy}}{\partial x\,\partial y}.}
+\]
+
+\section{The general 3D case}
+
+\paragraph{Step 1 -- differentiate the strain twice.}
+\[
+  \eps_{ij}=\tfrac12\left(u_{i,j}+u_{j,i}\right)
+  \quad\Longrightarrow\quad
+  \eps_{ij,kl}=\tfrac12\left(u_{i,jkl}+u_{j,ikl}\right).
+\]
+
+\paragraph{Step 2 -- express the four terms of the compatibility equation.}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Term & Value in terms of $\boldsymbol u$\\
+\midrule
+$\eps_{ij,kk}$ & $\tfrac12 u_{i,jkk}+\tfrac12 u_{j,ikk}$\\[2pt]
+$\eps_{kk,ij}$ & $u_{k,kij}$\\[2pt]
+$\eps_{jk,ik}$ & $\tfrac12 u_{j,kik}+\tfrac12 u_{k,jik}$\\[2pt]
+$\eps_{ik,jk}$ & $\tfrac12 u_{i,kjk}+\tfrac12 u_{k,ijk}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Step 3 -- add the first two, subtract the last two.}
+Since derivative order is irrelevant ($u_{j,kik}=u_{j,ikk}$, $u_{k,jik}=u_{k,kij}$, \dots), the terms cancel in pairs:
+\begin{itemize}
+  \item $\tfrac12 u_{i,jkk}$ cancels with $\tfrac12 u_{i,kjk}$;
+  \item $\tfrac12 u_{j,ikk}$ cancels with $\tfrac12 u_{j,kik}$;
+  \item $u_{k,kij}$ cancels with $\tfrac12 u_{k,jik}+\tfrac12 u_{k,ijk}$.
+\end{itemize}
+Therefore
+\[
+  \boxed{\;\frac{\partial^2\eps_{ij}}{\partial x_k\partial x_k}+\frac{\partial^2\eps_{kk}}{\partial x_i\partial x_j}
+  -\frac{\partial^2\eps_{jk}}{\partial x_i\partial x_k}-\frac{\partial^2\eps_{ik}}{\partial x_j\partial x_k}=0.\;}
+\]
+
+\section{A more systematic route: via the rotation}
+
+This route explains \emph{where} the combination comes from, instead of checking it after the fact.
+Split the displacement gradient into its symmetric and antisymmetric parts:
+\[
+  u_{i,j}=\eps_{ij}+\omega_{ij},\qquad \omega_{ij}=\tfrac12\left(u_{i,j}-u_{j,i}\right),
+\]
+where $\omega$ is the infinitesimal rotation. One differentiation gives its gradient from $\teps$ alone:
+\[
+  \omega_{ij,k}=\tfrac12\left(u_{i,jk}-u_{j,ik}\right)=\eps_{ik,j}-\eps_{jk,i},
+\]
+since $\eps_{ik,j}-\eps_{jk,i}=\tfrac12\left(u_{i,kj}+u_{k,ij}-u_{j,ki}-u_{k,ji}\right)=\tfrac12\left(u_{i,jk}-u_{j,ik}\right)$.
+
+For $\omega$ to be a genuine function, its second derivatives must commute: $\omega_{ij,kl}=\omega_{ij,lk}$. Now
+\[
+  \omega_{ij,kl}=\eps_{ik,jl}-\eps_{jk,il},\qquad
+  \omega_{ij,lk}=\eps_{il,jk}-\eps_{jl,ik},
+\]
+so the condition reads
+\begin{equation}\label{eq:full}
+  \eps_{ik,jl}+\eps_{jl,ik}-\eps_{il,jk}-\eps_{jk,il}=0,
+\end{equation}
+which is the full Saint-Venant system (81 scalar equations, 6 of them independent in 3D).
+
+\paragraph{Recovering the contracted form.}
+Simply setting $l=k$ in~\eqref{eq:full} gives the trivial identity $0=0$. Instead, take the component with indices $(i,k,j,k)$, that is $j\to k$, $k\to j$, $l\to k$, and sum over $k$:
+\[
+  \eps_{ij,kk}+\eps_{kk,ij}-\eps_{ik,jk}-\eps_{jk,ik}=0,
+\]
+which is the boxed equation of Section~2. In tensor notation the same condition reads
+\[
+  \Inc(\teps)=\rot\rot(\teps)=0.
+\]
+
+\paragraph{Why the condition is also sufficient.}
+If~\eqref{eq:full} holds on a simply connected domain, the relation $\omega_{ij,k}=\eps_{ik,j}-\eps_{jk,i}$ can be integrated to obtain $\omega$; then $u_{i,j}=\eps_{ij}+\omega_{ij}$ can be integrated to obtain $\boldsymbol u$. The resulting displacement reproduces $\teps$, and is unique up to a rigid-body motion.
+
+\end{document}

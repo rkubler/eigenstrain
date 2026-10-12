@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eigenstrain &amp; Residual Stress Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a lab bench. Tabs pick an experiment; each has a stage (animation), a control rail with the numbered sequence, and a live plot. */
+:root{
+  --bg:#F6F5F8; --surface:#FFFFFF; --fg:#1F1A24; --muted:#675F70; --line:#DCD7E2;
+  --accent:#7B2D6E; --accent2:#C97A12;
+  --ten:#2E6BD1; --com:#D03A2D; --plas:#B98A0C; --res:#23894A; --heat:#EE7B1B;
+  --neutral:#E4E0E9; --metal:#CEC8D5; --aff:#E9D3E4;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131017; --surface:#1C1821; --fg:#ECE8F0; --muted:#A79FB0; --line:#352F3D;
+  --accent:#D28CC4; --accent2:#F0A64A;
+  --ten:#71A3FF; --com:#FF7A6A; --plas:#E6BE45; --res:#5CCB7C; --heat:#FF9A3D;
+  --neutral:#3A3442; --metal:#4B4454; --aff:#5A3554; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131017; --surface:#1C1821; --fg:#ECE8F0; --muted:#A79FB0; --line:#352F3D;
+  --accent:#D28CC4; --accent2:#F0A64A;
+  --ten:#71A3FF; --com:#FF7A6A; --plas:#E6BE45; --res:#5CCB7C; --heat:#FF9A3D;
+  --neutral:#3A3442; --metal:#4B4454; --aff:#5A3554; color-scheme:dark}
+
+html,body{margin:0}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 48px;display:grid;gap:22px}
+header{display:grid;gap:8px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:800 clamp(26px,4vw,40px)/1.08 var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance;max-width:24ch}
+.lede{margin:0;max-width:68ch;color:var(--muted)}
+.lede b{color:var(--fg);font-weight:600}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
+.tab{appearance:none;border:0;background:none;color:var(--muted);font:600 15px var(--body);padding:10px 14px;border-bottom:3px solid transparent;margin-bottom:-1px;cursor:pointer}
+.tab span{font:500 12px var(--mono);margin-right:6px;color:var(--accent)}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tab:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.scene{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;align-items:start}
+@media (max-width:880px){.scene{grid-template-columns:minmax(0,1fr)}}
+.main{display:grid;gap:12px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+.panel h3{font:700 13px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+svg.fig{display:block;width:100%;height:auto}
+.note{font:400 12px var(--mono);color:var(--muted);margin:4px 2px 0}
+
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 14px var(--body);padding:7px 14px;border-radius:8px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.scrub{flex:1;min-width:140px;accent-color:var(--accent)}
+
+.side{display:grid;gap:12px;min-width:0}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:st}
+ol.steps li{counter-increment:st}
+ol.steps button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:baseline;width:100%;padding:6px 8px;border-radius:6px;color:var(--muted);font:600 14px/1.3 var(--body)}
+ol.steps button::before{content:counter(st);font:500 12px var(--mono);min-width:1.4em;height:1.4em;display:inline-grid;place-items:center;border-radius:50%;border:1px solid var(--line)}
+ol.steps li.done button{color:var(--fg)}
+ol.steps li.on button{color:var(--fg);background:var(--neutral)}
+ol.steps li.on button::before{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.caption{font-size:15px;line-height:1.5;min-height:9em}
+.caption p{margin:0 0 6px}
+.caption .eq{font-family:var(--mono);font-size:13px;background:var(--neutral);padding:1px 5px;border-radius:4px;white-space:nowrap}
+.params{display:grid;gap:10px}
+.param label{display:flex;justify-content:space-between;font-size:14px}
+.param output{font:500 13px var(--mono)}
+.param input{width:100%;accent-color:var(--accent)}
+dl.read{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0;font:400 13px var(--mono);font-variant-numeric:tabular-nums}
+dl.read dt{color:var(--muted)}
+dl.read dd{margin:0;text-align:right}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font:400 12px var(--mono);color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+
+svg text{font-family:var(--mono)}
+.lbl{fill:var(--fg);font-size:15px}
+.sm{fill:var(--muted);font-size:13px}
+.big{fill:var(--fg);font:700 18px var(--display)}
+.ax{stroke:var(--muted);stroke-width:1}
+.grid{stroke:var(--line);stroke-width:1}
+footer{font-size:13px;color:var(--muted);max-width:75ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Residual stresses · compatibility · eigenstrain</div>
+    <h1>How an incompatible strain creates residual stress</h1>
+    <p class="lede">An <b>eigenstrain</b> ε* is a strain that is not caused by stress: plastic flow, thermal expansion, a phase change, an interference fit. When ε* is <b>incompatible</b>, the parts no longer fit together. Forcing them back into one continuous body requires elastic strains, and those elastic strains carry <b>self-equilibrated residual stresses</b>.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-0" aria-selected="true" data-k="0"><span>1</span>The principle</button>
+    <button class="tab" role="tab" id="tab-1" aria-selected="false" data-k="1"><span>2</span>Constrained bar</button>
+    <button class="tab" role="tab" id="tab-3" aria-selected="false" data-k="3"><span>3</span>Elastoplastic bending</button>
+    <button class="tab" role="tab" id="tab-2" aria-selected="false" data-k="2"><span>4</span>Frettage of pipes</button>
+    <button class="tab" role="tab" id="tab-4" aria-selected="false" data-k="4"><span>5</span>Bimetallic strip</button>
+    <button class="tab" role="tab" id="tab-5" aria-selected="false" data-k="5"><span>6</span>Elastoplastic composite</button>
+  </div>
+
+  <!-- Scene 1 -->
+  <section class="scene" id="s0" role="tabpanel" aria-labelledby="tab-0">
+    <div class="main">
+      <div class="panel">
+        <svg class="fig stage" viewBox="0 0 800 330" role="img" aria-label="Surface-treated part with residual stress profile"></svg>
+        <p class="note">Strains exaggerated ×40 · thick part, no bending</p>
+      </div>
+      <div class="panel controls">
+        <button class="btn primary play" type="button" id="p0-play">Play</button>
+        <button class="btn restart" type="button" id="p0-restart">Restart</button>
+        <input class="scrub" type="range" min="0" max="1000" value="0" id="p0-scrub" aria-label="Timeline">
+      </div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Sequence</h3><ol class="steps"></ol></div>
+      <div class="panel caption" aria-live="polite"></div>
+      <div class="panel params">
+        <h3>Parameters</h3>
+        <div class="param"><label for="s0-eps">Free strain of the layer ε* <output id="s0-eps-o"></output></label><input type="range" id="s0-eps" min="0.05" max="0.4" step="0.05" value="0.2"></div>
+        <div class="param"><label for="s0-r">Layer / core thickness h/H <output id="s0-r-o"></output></label><input type="range" id="s0-r" min="0.05" max="0.4" step="0.05" value="0.15"></div>
+        <p class="note">E = 200 GPa</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Scene 2 -->
+  <section class="scene" id="s1" role="tabpanel" aria-labelledby="tab-1" hidden>
+    <div class="main">
+      <div class="panel">
+        <svg class="fig stage" viewBox="0 0 800 290" role="img" aria-label="Bar clamped at A and C, loaded at B"></svg>
+        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:repeating-linear-gradient(45deg,var(--plas) 0 2px,transparent 2px 5px)"></i>plastic strain</span><span>displacements ×30</span></div>
+      </div>
+      <div class="panel">
+        <svg class="fig plot" viewBox="0 0 800 300" role="img" aria-label="Stresses versus displacement at B"></svg>
+      </div>
+      <div class="panel controls">
+        <button class="btn primary play" type="button" id="p1-play">Play</button>
+        <button class="btn restart" type="button" id="p1-restart">Restart</button>
+        <input class="scrub" type="range" min="0" max="1000" value="0" id="p1-scrub" aria-label="Timeline">
+      </div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Sequence</h3><ol class="steps"></ol></div>
+      <div class="panel caption" aria-live="polite"></div>
+      <div class="panel"><h3>Live values</h3><dl class="read" id="s1-read"></dl></div>
+      <div class="panel params">
+        <h3>Parameters</h3>
+        <div class="param"><label for="s1-beta">Position of B, β <output id="s1-beta-o"></output></label><input type="range" id="s1-beta" min="0.05" max="0.5" step="0.05" value="0.2"></div>
+        <div class="param"><label for="s1-u">Maximum displacement ũ<sub>B</sub> <output id="s1-u-o"></output></label><input type="range" id="s1-u" min="0.002" max="0.03" step="0.001" value="0.025"></div>
+        <p class="note">L = 10 mm · E = 200 GPa · σ<sub>y</sub> = 500 MPa, elastic perfectly plastic</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Scene 3 -->
+  <section class="scene" id="s2" role="tabpanel" aria-labelledby="tab-2" hidden>
+    <div class="main">
+      <div class="panel">
+        <svg class="fig stage" viewBox="0 0 800 340" role="img" aria-label="Cross-sections of two tubes being shrink-fitted"></svg>
+        <div class="legend"><span><i style="background:var(--ten)"></i>hoop tension</span><span><i style="background:var(--com)"></i>hoop compression</span><span><i style="background:var(--heat)"></i>heated</span><span>radial displacements ×150</span></div>
+      </div>
+      <div class="panel">
+        <svg class="fig plot" viewBox="0 0 800 300" role="img" aria-label="Hoop and radial stress across the wall"></svg>
+      </div>
+      <div class="panel controls">
+        <button class="btn primary play" type="button" id="p2-play">Play</button>
+        <button class="btn restart" type="button" id="p2-restart">Restart</button>
+        <input class="scrub" type="range" min="0" max="1000" value="0" id="p2-scrub" aria-label="Timeline">
+      </div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Sequence</h3><ol class="steps"></ol></div>
+      <div class="panel caption" aria-live="polite"></div>
+      <div class="panel params">
+        <h3>Parameters</h3>
+        <div class="param"><label for="s2-d">Radial interference δ <output id="s2-d-o"></output></label><input type="range" id="s2-d" min="10" max="80" step="5" value="50"></div>
+        <p class="note">a = 20 mm · b = 30 mm · c = 45 mm · E = 200 GPa · ν = 0.3 · α = 12×10⁻⁶ /K · plane stress, elastic</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Scene 4: bending -->
+  <section class="scene" id="s3" role="tabpanel" aria-labelledby="tab-3" hidden>
+    <div class="main">
+      <div class="panel">
+        <svg class="fig stage" viewBox="0 0 800 300" role="img" aria-label="Beam in pure bending with stress profile"></svg>
+        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:repeating-linear-gradient(45deg,var(--plas) 0 2px,transparent 2px 5px)"></i>plastic strain</span><span>curvature and fibre strains exaggerated</span></div>
+      </div>
+      <div class="panel">
+        <svg class="fig plot" viewBox="0 0 800 280" role="img" aria-label="Moment versus curvature"></svg>
+      </div>
+      <div class="panel controls">
+        <button class="btn primary play" type="button" id="p3-play">Play</button>
+        <button class="btn restart" type="button" id="p3-restart">Restart</button>
+        <input class="scrub" type="range" min="0" max="1000" value="0" id="p3-scrub" aria-label="Timeline">
+      </div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Sequence</h3><ol class="steps"></ol></div>
+      <div class="panel caption" aria-live="polite"></div>
+      <div class="panel params">
+        <h3>Parameters</h3>
+        <div class="param"><label for="s3-m">Maximum moment M̃/Mₑ <output id="s3-m-o"></output></label><input type="range" id="s3-m" min="0.9" max="1.45" step="0.05" value="1.35"></div>
+        <p class="note">Rectangular section, height 2h · E = 200 GPa · σ<sub>y</sub> = 300 MPa · elastic perfectly plastic · Mₑ = σ<sub>y</sub>I/h, Mₚ = 1.5 Mₑ</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Scene 5: bimetallic strip -->
+  <section class="scene" id="s4" role="tabpanel" aria-labelledby="tab-4" hidden>
+    <div class="main">
+      <div class="panel">
+        <svg class="fig stage" viewBox="0 0 800 300" role="img" aria-label="Bimetallic strip heated and bending"></svg>
+        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:var(--heat)"></i>heated</span><span>strains ×60 · deflection ×30 · thickness not to scale</span></div>
+      </div>
+      <div class="panel controls">
+        <button class="btn primary play" type="button" id="p4-play">Play</button>
+        <button class="btn restart" type="button" id="p4-restart">Restart</button>
+        <input class="scrub" type="range" min="0" max="1000" value="0" id="p4-scrub" aria-label="Timeline">
+      </div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Sequence</h3><ol class="steps"></ol></div>
+      <div class="panel caption" aria-live="polite"></div>
+      <div class="panel params">
+        <h3>Parameters</h3>
+        <div class="param"><label for="s4-dt">Temperature rise ΔT <output id="s4-dt-o"></output></label><input type="range" id="s4-dt" min="25" max="250" step="25" value="150"></div>
+        <p class="note">Strip 60 mm long · steel (bottom): 1 mm, E = 210 GPa, α = 12×10⁻⁶ /K · copper (top): 1 mm, E = 120 GPa, α = 17×10⁻⁶ /K · elastic</p>
+      </div>
+    </aside>
+  </section>
+
+  <!-- Scene 6: composite -->
+  <section class="scene" id="s5" role="tabpanel" aria-labelledby="tab-5" hidden>
+    <div class="main">
+      <div class="panel">
+        <svg class="fig stage" viewBox="0 0 800 290" role="img" aria-label="Fibre composite loaded in tension"></svg>
+        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:repeating-linear-gradient(45deg,var(--plas) 0 2px,transparent 2px 5px)"></i>plastic strain</span><span>fibre and matrix colour scales differ · strains ×15</span></div>
+      </div>
+      <div class="panel">
+        <svg class="fig plot" viewBox="0 0 800 290" role="img" aria-label="Stresses in fibres and matrix versus strain"></svg>
+      </div>
+      <div class="panel controls">
+        <button class="btn primary play" type="button" id="p5-play">Play</button>
+        <button class="btn restart" type="button" id="p5-restart">Restart</button>
+        <input class="scrub" type="range" min="0" max="1000" value="0" id="p5-scrub" aria-label="Timeline">
+      </div>
+    </div>
+    <aside class="side">
+      <div class="panel"><h3>Sequence</h3><ol class="steps"></ol></div>
+      <div class="panel caption" aria-live="polite"></div>
+      <div class="panel params">
+        <h3>Parameters</h3>
+        <div class="param"><label for="s5-f">Fibre volume fraction f <output id="s5-f-o"></output></label><input type="range" id="s5-f" min="0.1" max="0.6" step="0.05" value="0.3"></div>
+        <div class="param"><label for="s5-e">Maximum strain ε̃ <output id="s5-e-o"></output></label><input type="range" id="s5-e" min="0.1" max="1" step="0.05" value="0.5"></div>
+        <p class="note">Fibres: E<sub>f</sub> = 400 GPa, elastic · matrix: E<sub>m</sub> = 70 GPa, σ<sub>y</sub> = 100 MPa, elastic perfectly plastic · loaded along the fibres (iso-strain)</p>
+      </div>
+    </aside>
+  </section>
+
+  <footer>Bar problem after Korsunsky (2017), as in the course slides. The other cases use classical solutions: Lamé thick cylinders for frettage, a rectangular elastic–perfectly plastic section for bending, Timoshenko-type beam theory for the bimetallic strip, and an iso-strain model for the composite.<br><br><b>Author:</b> Dr Régis Kubler, Arts et Métiers Institute of Technology. Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.<br><b>Cite as:</b> Kubler, R. (2026). <i>Eigenstrain &amp; Residual Stress Simulator</i>. Arts et Métiers Institute of Technology. Zenodo. DOI: to be given. · MIT License</footer>
+</div>
+
+<script>
+(function(){
+const E=200000; // MPa
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const f0=v=>Math.round(v).toString().replace('-','−');
+const f1=v=>(Math.round(v*10)/10).toFixed(1).replace('-','−');
+function sFill(v,scale){
+  const k=clamp(v/(scale||1),-1,1);
+  const pc=Math.round(Math.abs(k)*100);
+  return k>=0?`color-mix(in oklab, var(--ten) ${pc}%, var(--neutral))`:`color-mix(in oklab, var(--com) ${pc}%, var(--neutral))`;
+}
+function arrow(x1,y1,x2,y2,col,w){
+  w=w||2.5; const len=Math.hypot(x2-x1,y2-y1); if(len<3) return '';
+  const a=Math.atan2(y2-y1,x2-x1), h=Math.min(7+w*1.6,len*.7);
+  const bx=x2-h*Math.cos(a), by=y2-h*Math.sin(a), px=Math.sin(a)*h*.55, py=-Math.cos(a)*h*.55;
+  return `<line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}" style="stroke:${col};stroke-width:${w}" stroke-linecap="round"/><path d="M${x2},${y2}L${bx+px},${by+py}L${bx-px},${by-py}Z" style="fill:${col}"/>`;
+}
+const T=(x,y,s,c,a)=>`<text x="${x}" y="${y}" class="${c||'lbl'}" text-anchor="${a||'start'}">${s}</text>`;
+
+/* ---------- player ---------- */
+function Player(root,phases,draw){
+  const total=phases.reduce((s,p)=>s+p.dur,0);
+  let t=0,playing=false,last=0,cur=-1;
+  const btn=root.querySelector('.play'),scrub=root.querySelector('.scrub'),ol=root.querySelector('.steps'),cap=root.querySelector('.caption');
+  ol.innerHTML=phases.map((p,i)=>`<li><button type="button" data-i="${i}">${p.name}</button></li>`).join('');
+  ol.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;let s=0;for(let j=0;j<+b.dataset.i;j++)s+=phases[j].dur;t=s+.001;pause();render();});
+  scrub.addEventListener('input',()=>{t=scrub.value/1000*total;pause();render();});
+  btn.addEventListener('click',()=>playing?pause():play());
+  root.querySelector('.restart').addEventListener('click',()=>{t=0;play();});
+  function locate(){let s=0;for(let i=0;i<phases.length;i++){if(t<s+phases[i].dur||i===phases.length-1)return{i,k:clamp((t-s)/phases[i].dur,0,1)};s+=phases[i].dur;}}
+  function render(){
+    const {i,k}=locate(); draw(i,k); scrub.value=Math.round(t/total*1000);
+    if(i!==cur||phases[i].live){ if(i!==cur){cur=i;[...ol.children].forEach((li,j)=>{li.classList.toggle('on',j===i);li.classList.toggle('done',j<i);});}
+      cap.innerHTML=phases[i].cap(k); }
+  }
+  function loop(now){if(!playing)return;t+=(now-last)/1000;last=now;if(t>=total){t=total;pause();}render();if(playing)requestAnimationFrame(loop);}
+  function play(){if(t>=total)t=0;playing=true;btn.textContent='Pause';last=performance.now();requestAnimationFrame(loop);}
+  function pause(){playing=false;btn.textContent='Play';}
+  return {play,pause,refresh(){cur=-1;render();},toEnd(){t=total;render();},get t(){return t}};
+}
+function bindRange(id,fmt,cb){const el=document.getElementById(id),o=document.getElementById(id+'-o');const up=()=>{o.textContent=fmt(+el.value);};up();el.addEventListener('input',()=>{up();cb(+el.value);});return ()=>+el.value;}
+
+/* =========================================================
+   Scene 1 — the principle (surface treatment)
+   ========================================================= */
+const S0=(function(){
+  const root=document.getElementById('s0'), svg=root.querySelector('.stage');
+  let eps=0.002, r=0.15;
+  const gEps=bindRange('s0-eps',v=>v.toFixed(2)+' %',v=>{eps=v/100;P.refresh();});
+  const gR=bindRange('s0-r',v=>v.toFixed(2),v=>{r=v;P.refresh();});
+  const amp=40, x0=60, W=380, yC=150, Hpx=150;
+  const vals=()=>{const sr=-E*eps, sl=-E*eps/(1+r), sc=E*eps*r/(1+r), ec=eps*r/(1+r);return{sr,sl,sc,ec};};
+  function draw(i,k){
+    const {sr,sl,sc,ec}=vals(), e=ease(k), Lpx=Math.max(10,Hpx*r), scale=Math.abs(sr);
+    let lift=0,lw=W,cw=W,sL=0,sC=0,cut=i>=1?1:0,inA=0,outA=0,coreA=0;
+    if(i===1)cut=e;
+    if(i===2){lift=-38*e;lw=W*(1+amp*eps*e);outA=e;}
+    if(i===3){lift=-38*(1-e);lw=W*(1+amp*eps*(1-e));sL=sr*e;inA=e;}
+    if(i===4){lw=cw=W*(1+amp*ec*e);sL=lerp(sr,sl,e);sC=sc*e;inA=1;coreA=e;}
+    const cx=x0+W/2, yL=yC-Lpx+lift;
+    let s='';
+    // core
+    s+=`<rect x="${cx-cw/2}" y="${yC}" width="${cw}" height="${Hpx}" style="fill:${i>=4?sFill(sC,scale*.35):'var(--metal)'};stroke:var(--fg);stroke-opacity:.35"/>`;
+    s+=T(cx-cw/2+12,yC+28,'Core (H): unaffected');
+    // layer
+    const lf=i<3?'var(--aff)':sFill(sL,scale);
+    s+=`<rect x="${cx-lw/2}" y="${yL}" width="${lw}" height="${Lpx}" style="fill:${lf};stroke:var(--accent);stroke-width:1.5"/>`;
+    s+=T(cx,yL-10,'Affected layer (h)','sm','middle');
+    // original outline when layer has moved
+    if(i===2||i===3) s+=`<rect x="${x0}" y="${yC-Lpx}" width="${W}" height="${Lpx}" style="fill:none;stroke:var(--muted);stroke-dasharray:4 4"/>`;
+    // cut line
+    if(cut>0){const len=(W+80)*cut;s+=`<line x1="${x0-40}" y1="${yC}" x2="${x0-40+len}" y2="${yC}" style="stroke:var(--fg);stroke-width:2.5;stroke-dasharray:10 7"/>`;}
+    // arrows
+    const ay=yL+Lpx/2;
+    if(outA>0){s+=arrow(cx-lw/2,ay,cx-lw/2-34*outA,ay,'var(--accent2)',3.5)+arrow(cx+lw/2,ay,cx+lw/2+34*outA,ay,'var(--accent2)',3.5);
+      s+=T(cx,yL-30,`free strain ε* = ${(eps*100).toFixed(2)} %`,'lbl','middle');}
+    if(inA>0){s+=arrow(cx-lw/2-34,ay,cx-lw/2+6,ay,'var(--com)',3.5*inA+.5)+arrow(cx+lw/2+34,ay,cx+lw/2-6,ay,'var(--com)',3.5*inA+.5);}
+    if(coreA>0){for(const yy of [yC+60,yC+105]){s+=arrow(cx-cw/2-4,yy,cx-cw/2-36*coreA,yy,'var(--ten)',3.5)+arrow(cx+cw/2+4,yy,cx+cw/2+36*coreA,yy,'var(--ten)',3.5);}}
+    // ---- profile ----
+    const zx=650, sc_px=125/scale, top=yC-Lpx, bot=yC+Hpx;
+    s+=T(zx,top-34,'σ(z) (MPa)','sm','middle');
+    s+=`<line x1="${zx}" y1="${top-22}" x2="${zx}" y2="${bot+16}" class="ax"/>`+arrow(zx,bot,zx,bot+22,'var(--muted)',1.2);
+    s+=T(zx+8,bot+22,'z','sm');
+    s+=`<line x1="${zx-140}" y1="${top}" x2="${zx+120}" y2="${top}" class="grid"/>`+T(zx+124,top+4,'0','sm');
+    s+=`<line x1="${zx-140}" y1="${yC}" x2="${zx+120}" y2="${yC}" class="grid" style="stroke-dasharray:4 4"/>`+T(zx+124,yC+4,'z = h','sm');
+    if(i>=3){
+      const xl=zx+sL*sc_px;
+      s+=`<rect x="${Math.min(xl,zx)}" y="${top}" width="${Math.abs(xl-zx)}" height="${yC-top}" style="fill:var(--com);fill-opacity:.8"/>`;
+      s+=T(xl-6,top+Math.max(12,(yC-top)/2+5),f0(sL),'lbl','end');
+      if(i>=4){const xc=zx+sC*sc_px;s+=`<rect x="${zx}" y="${yC}" width="${xc-zx}" height="${Hpx}" style="fill:var(--ten);fill-opacity:.75"/>`;
+        s+=T(xc+6,yC+Hpx/2,'+'+f0(sC),'lbl');}
+      const bal=i>=4&&k>.95;
+      s+=T(zx,bot+48,bal?'σ_layer·h + σ_core·H = 0 ✓':'net force ≠ 0','lbl','middle').replace('class="lbl"',`class="lbl" style="fill:${bal?'var(--res)':'var(--com)'}"`);
+    } else s+=T(zx,yC+Hpx/2,'no stress','sm','middle');
+    svg.innerHTML=s;
+  }
+  const v=vals;
+  const phases=[
+    {name:'Treated part',dur:1.6,cap:()=>`<p>After a surface treatment, a thin layer of thickness h is affected. The core, of thickness H, is unchanged.</p>`},
+    {name:'Imaginary cut',dur:1.6,cap:()=>`<p>Cut the layer free from the core, in thought only. Each piece can now deform without the other.</p>`},
+    {name:'Free eigenstrain ε*',dur:2.6,cap:()=>`<p>The treatment gives the layer an irreversible strain ε* (plastic stretching, phase change, thermal strain). Free, the layer just gets longer and carries <b>no stress</b>.</p><p>Layer and core no longer fit: the strain field is <b>incompatible</b>.</p>`},
+    {name:'Stick back',dur:2.6,cap:()=>`<p>The cut was imaginary, so the layer must fit the core again. With a rigid core, the layer is pushed back by −ε*:</p><p><span class="eq">σ = −E ε* = ${f0(v().sr)} MPa</span></p><p>Nothing balances this force yet.</p>`},
+    {name:'Self-equilibrium',dur:2.8,cap:()=>{const q=v();return `<p>The core resists but also stretches, to a common strain <span class="eq">ε = ε* h/(h+H)</span>.</p><p>Layer: <span class="eq">σ = −Eε* H/(h+H) = ${f0(q.sl)} MPa</span></p><p>Core: <span class="eq">σ = +Eε* h/(h+H) = +${f0(q.sc)} MPa</span></p><p>The forces cancel with no external load: surface in compression, core in tension.</p>`;}}
+  ];
+  const P=Player(root,phases,draw);
+  return P;
+})();
+
+/* =========================================================
+   Scene 2 — constrained elastoplastic bar
+   ========================================================= */
+const S1=(function(){
+  const root=document.getElementById('s1'), svg=root.querySelector('.stage'), plot=root.querySelector('.plot'), read=document.getElementById('s1-read');
+  const L=10, sy=500;
+  let beta=0.2, uMax=0.025;
+  bindRange('s1-beta',v=>v.toFixed(2),v=>{beta=v;P.refresh();});
+  bindRange('s1-u',v=>v.toFixed(3)+' mm',v=>{uMax=v;P.refresh();});
+  function load(u){
+    const s=E*u/L, b=beta; let s1,s2,f,st;
+    if(s<=b*sy+1e-9){s1=s/b;s2=-s/(1-b);f=s/(b*(1-b));st='I';}
+    else if(s<=(1-b)*sy+1e-9){s1=sy;s2=-s/(1-b);f=sy+s/(1-b);st='II';}
+    else{s1=sy;s2=-sy;f=2*sy;st='III';}
+    const e1=u/(b*L), e2=-u/((1-b)*L);
+    return{u,s,s1,s2,f,st,ep1:e1-s1/E,ep2:e2-s2/E};
+  }
+  function unload(m,q){ // q: 0..1 fraction of force removed
+    const ds=-beta*(1-beta)*m.f*q;
+    return{u:m.u+ds*L/E,s1:m.s1+ds/beta,s2:m.s2-ds/(1-beta),f:m.f*(1-q)};
+  }
+  const resOf=u=>{const m=load(u);return unload(m,1).s1;};
+  // geometry
+  const xA=60,xC=740,Lpx=xC-xA,pxmm=Lpx/L,amp=30,yb=118,hb=22;
+  function bar(y,xB,s1,s2,p1,p2,op){
+    const sc=sy; let s='';
+    s+=`<g style="opacity:${op}"><rect x="${xA}" y="${y-hb/2}" width="${xB-xA}" height="${hb}" style="fill:${sFill(s1,sc)};stroke:var(--fg);stroke-opacity:.4"/>`;
+    s+=`<rect x="${xB}" y="${y-hb/2}" width="${xC-xB}" height="${hb}" style="fill:${sFill(s2,sc)};stroke:var(--fg);stroke-opacity:.4"/>`;
+    if(p1)s+=`<rect x="${xA}" y="${y-hb/2}" width="${xB-xA}" height="${hb}" style="fill:url(#hatch)"/>`;
+    if(p2)s+=`<rect x="${xB}" y="${y-hb/2}" width="${xC-xB}" height="${hb}" style="fill:url(#hatch)"/>`;
+    s+=`<circle cx="${xB}" cy="${y}" r="6" style="fill:var(--fg)"/></g>`;
+    return s;
+  }
+  function walls(y1,y2){let s='';for(const [x,d] of [[xA,-1],[xC,1]]){s+=`<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" style="stroke:var(--fg);stroke-width:2.5"/>`;for(let yy=y1+6;yy<y2;yy+=13)s+=`<line x1="${x}" y1="${yy}" x2="${x+d*12}" y2="${yy-10}" style="stroke:var(--fg);stroke-width:1.2"/>`;}return s;}
+  let state={};
+  function compute(i,k){
+    const m=load(uMax);
+    if(i===0){const c=load(uMax*ease(k));return{phase:0,c,m,cur:{u:c.u,s1:c.s1,s2:c.s2,f:c.f},uLoad:c.u,q:0};}
+    const q=i===1?ease(k):1, cur=unload(m,q);
+    return{phase:i,c:m,m,cur,uLoad:uMax,q};
+  }
+  function draw(i,k){
+    const st=compute(i,k); state=st; const {m,cur}=st, e=ease(k);
+    const xB0=xA+beta*Lpx, xB=xB0+cur.u*pxmm*amp;
+    const p1=Math.abs(st.c.ep1)>1e-9&&(i>0||st.c.st!=='I'), p2=st.c.st==='III'&&Math.abs(st.c.ep2)>1e-9;
+    let s=`<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="7" style="fill:var(--plas)"/></pattern></defs>`;
+    s+=walls(40,i>=2?268:200);
+    // labels
+    s+=T(xA+6,yb+40,'A','sm')+T(xC-6,yb+40,'C','sm','end')+T(xB,yb+40,'B','sm','middle');
+    s+=T((xA+xB0)/2,yb-26,'1','big','middle')+T((xB0+xC)/2,yb-26,'2','big','middle');
+    // dimension βL
+    s+=`<line x1="${xA}" y1="${yb+58}" x2="${xB0}" y2="${yb+58}" class="ax"/><line x1="${xB0}" y1="${yb+52}" x2="${xB0}" y2="${yb+64}" class="ax"/>`+T((xA+xB0)/2,yb+76,'βL','sm','middle')+T((xB0+xC)/2,yb+76,'(1−β)L','sm','middle');
+    s+=`<line x1="${xB0}" y1="${yb+58}" x2="${xC}" y2="${yb+58}" class="ax" style="stroke-dasharray:3 3"/>`;
+    // bar (actual)
+    const topOp=i>=2?1:1;
+    s+=bar(yb,xB,cur.s1,cur.s2,p1,p2,topOp);
+    // force arrow
+    if(cur.f>1){const fl=cur.f/1000*90;s+=arrow(xB,yb-46,xB+fl,yb-46,'var(--fg)',3)+T(xB+fl+8,yb-41,'F<tspan dy="4" font-size="11">B</tspan>','lbl');}
+    s+=`<line x1="${xB0}" y1="${yb-60}" x2="${xB0}" y2="${yb+64}" style="stroke:var(--muted);stroke-dasharray:3 4"/>`;
+    // plastic labels
+    if(p1)s+=T((xA+xB)/2,yb+5,'plastic','sm','middle').replace('class="sm"','class="sm" style="fill:var(--fg)"');
+    if(p2)s+=T((xB+xC)/2,yb+5,'plastic','sm','middle').replace('class="sm"','class="sm" style="fill:var(--fg)"');
+    // eigenstrain pieces
+    if(i>=2){
+      const yp=232, res=cur.s1; // residual (equal in both)
+      const ep1=m.ep1, ep2=m.ep2;
+      const L1free=(beta*L*(1+ep1)), L2free=((1-beta)*L*(1+ep2));
+      const L1fit=beta*L+cur.u, L2fit=(1-beta)*L-cur.u;
+      // exaggerate deviations from nominal
+      const px1=(len)=>beta*Lpx+(len-beta*L)*pxmm*amp, px2=(len)=>(1-beta)*Lpx+(len-(1-beta)*L)*pxmm*amp;
+      let a1,a2,sig,dropY;
+      if(i===2){a1=lerp(px1(L1fit),px1(L1free),e);a2=lerp(px2(L2fit),px2(L2free),e);sig=res*(1-e);dropY=lerp(yb,yp,e);}
+      else{a1=lerp(px1(L1free),px1(L1fit),e);a2=lerp(px2(L2free),px2(L2fit),e);sig=res*e;dropY=yp;}
+      s+=`<rect x="${xA}" y="${dropY-hb/2}" width="${a1}" height="${hb}" style="fill:${sFill(sig,sy)};stroke:var(--accent);stroke-width:1.5"/>`;
+      s+=`<rect x="${xA+a1}" y="${dropY-hb/2}" width="${a2}" height="${hb}" style="fill:${sFill(sig,sy)};stroke:var(--accent);stroke-width:1.5"/>`;
+      if(Math.abs(ep1)>1e-9)s+=`<rect x="${xA}" y="${dropY-hb/2}" width="${a1}" height="${hb}" style="fill:url(#hatch)"/>`;
+      if(Math.abs(ep2)>1e-9)s+=`<rect x="${xA+a1}" y="${dropY-hb/2}" width="${a2}" height="${hb}" style="fill:url(#hatch)"/>`;
+      const endX=xA+a1+a2, gap=endX-xC, mis=(beta*ep1+(1-beta)*ep2)*L*1000;
+      if(i===2&&e>.6&&Math.abs(gap)>2){
+        s+=`<line x1="${xC}" y1="${yp+20}" x2="${endX}" y2="${yp+20}" style="stroke:var(--accent);stroke-width:2"/>`+T((xC+endX)/2,yp+38,`Δ = ${f1(mis)} µm`,'lbl','middle');
+      }
+      s+=T(xA+8,yp-20,i===2?'stress-free pieces (each relaxed)':'pieces forced back between the walls','sm');
+      if(i===3&&e>.3){s+=arrow(endX+40,yp,endX+4,yp,'var(--com)',3);}
+    }
+    svg.innerHTML=s;
+    drawPlot(st);
+    // readout
+    const c=st.cur, rows=[['stage',i===0?st.c.st:(i===1?'unloading':'after unloading')],['u_B (mm)',c.u.toFixed(4)],['f = F_B/A (MPa)',f0(c.f)],['σ₁ (MPa)',f0(c.s1)],['σ₂ (MPa)',f0(c.s2)],['ε*₁ (%)',(st.c.ep1*100).toFixed(3)],['ε*₂ (%)',(st.c.ep2*100).toFixed(3)]];
+    read.innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');
+  }
+  // plot
+  const PX0=70,PX1=770,PY0=18,PY1=262,XU=0.03,YMIN=-600,YMAX=1100;
+  const X=u=>PX0+u/XU*(PX1-PX0), Y=v=>PY1-(v-YMIN)/(YMAX-YMIN)*(PY1-PY0);
+  function path(pts){return pts.map((p,j)=>(j?'L':'M')+X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join('');}
+  function drawPlot(st){
+    let s='';
+    for(let v=-600;v<=1000;v+=200){s+=`<line x1="${PX0}" y1="${Y(v)}" x2="${PX1}" y2="${Y(v)}" class="grid"/>`+T(PX0-8,Y(v)+4,v.toString().replace('-','−'),'sm','end');}
+    for(let u=0;u<=XU+1e-9;u+=0.005){s+=`<line x1="${X(u)}" y1="${PY0}" x2="${X(u)}" y2="${PY1}" class="grid"/>`+T(X(u),Y(0)+16,u.toFixed(3),'sm','middle');}
+    s+=`<line x1="${PX0}" y1="${Y(0)}" x2="${PX1}" y2="${Y(0)}" class="ax"/>`;
+    s+=T(PX1,PY1+30,'displacement u_B (mm)','sm','end')+T(PX0-55,PY0+4,'MPa','sm');
+    const uL=st.uLoad, n=120, pts=[];for(let j=0;j<=n;j++){const u=uL*j/n;pts.push(load(u));}
+    const line=(arr,col,dash,w)=>`<path d="${path(arr)}" style="fill:none;stroke:${col};stroke-width:${w||3};${dash?'stroke-dasharray:'+dash:''}" stroke-linejoin="round"/>`;
+    s+=line(pts.map(p=>[p.u,p.f]),'var(--fg)','2 5',2.5);
+    s+=line(pts.map(p=>[p.u,p.s1]),'var(--ten)');
+    s+=line(pts.map(p=>[p.u,p.s2]),'var(--com)');
+    s+=line(pts.map(p=>[p.u,resOf(p.u)]),'var(--res)');
+    if(st.phase>=1){const m=st.m,arr=[];for(let j=0;j<=30;j++){arr.push(unload(m,st.q*j/30));}
+      s+=line(arr.map(p=>[p.u,p.s1]),'var(--ten)','6 4',2);s+=line(arr.map(p=>[p.u,p.s2]),'var(--com)','6 4',2);s+=line(arr.map(p=>[p.u,p.f]),'var(--fg)','2 5',1.5);}
+    const c=st.cur;
+    for(const [v,col] of [[c.f,'var(--fg)'],[c.s1,'var(--ten)'],[c.s2,'var(--com)']]) s+=`<circle cx="${X(c.u)}" cy="${Y(v)}" r="5" style="fill:${col};stroke:var(--surface);stroke-width:1.5"/>`;
+    if(st.phase>=1&&st.q>=1){const r=c.s1;s+=`<circle cx="${X(c.u)}" cy="${Y(r)}" r="7" style="fill:none;stroke:var(--res);stroke-width:2.5"/>`+T(X(c.u)+12,Y(r)+18,`σ_res = ${f0(r)} MPa`,'lbl');}
+    // legend
+    const lg=[['f = F_B/A','var(--fg)','2 5'],['σ₁ (part 1)','var(--ten)'],['σ₂ (part 2)','var(--com)'],['σ_res if unloaded here','var(--res)']];
+    lg.forEach((l,j)=>{const y=PY0+14+j*20;s+=`<line x1="${PX0+50}" y1="${y}" x2="${PX0+80}" y2="${y}" style="stroke:${l[1]};stroke-width:3;${l[2]?'stroke-dasharray:'+l[2]:''}"/>`+T(PX0+88,y+4,l[0],'sm');});
+    // stage bands
+    const sI=beta*sy*L/E, sII=(1-beta)*sy*L/E;
+    s+=T(X(sI/2),PY1-8,'I','sm','middle');
+    if(sII>sI+1e-9)s+=T(X((sI+Math.min(sII,XU))/2),PY1-8,'II','sm','middle');
+    if(sII<XU)s+=T(X((sII+XU)/2),PY1-8,'III','sm','middle');
+    s+=`<line x1="${X(sI)}" y1="${PY0}" x2="${X(sI)}" y2="${PY1}" style="stroke:var(--accent);stroke-dasharray:3 3;stroke-opacity:.6"/>`;
+    if(sII<XU)s+=`<line x1="${X(sII)}" y1="${PY0}" x2="${X(sII)}" y2="${PY1}" style="stroke:var(--accent);stroke-dasharray:3 3;stroke-opacity:.6"/>`;
+    plot.innerHTML=s;
+  }
+  const phases=[
+    {name:'Load: impose u_B',dur:6,live:true,cap:()=>{const c=state.c||load(0),b=beta;
+      const txt={I:`<p><b>Stage I, elastic.</b> Part 1 is stretched, part 2 compressed: <span class="eq">σ₁ = s/β</span>, <span class="eq">σ₂ = −s/(1−β)</span>, with <span class="eq">s = E u_B/L</span>.</p><p>Part 1 is shorter, so it yields first, when <span class="eq">s = βσ_y</span>.</p>`,
+        II:`<p><b>Stage II, part 1 is plastic.</b> <span class="eq">σ₁ = σ_y</span> stays constant while part 1 accumulates plastic strain ε*₁. Part 2 is still elastic: <span class="eq">σ₂ = −s/(1−β)</span>.</p>`,
+        III:`<p><b>Stage III, both parts are plastic.</b> <span class="eq">σ₁ = σ_y</span>, <span class="eq">σ₂ = −σ_y</span>, and the force saturates at <span class="eq">f = 2σ_y</span>.</p>`};
+      return txt[c.st]+`<p>Compatibility holds throughout: <span class="eq">βε₁ + (1−β)ε₂ = 0</span>.</p>`;}},
+    {name:'Unload: remove F_B',dur:3,cap:()=>{const r=state.cur?unload(load(uMax),1).s1:0;return `<p>The force is removed. Unloading is <b>elastic</b>: <span class="eq">Δs = −β(1−β) f̃</span>.</p><p>Both parts end with the <b>same</b> stress, <span class="eq">σ₁<sup>res</sup> = σ₂<sup>res</sup> = ${f0(r)} MPa</span>, because nothing else acts on B.</p>${Math.abs(r)<1?'<p>The maximum load stayed in stage I: no plastic strain, so no residual stress.</p>':''}`;}},
+    {name:'Free the parts',dur:2.8,cap:()=>{const m=load(uMax),mis=(beta*m.ep1+(1-beta)*m.ep2)*L*1000;return `<p>Release the parts from the walls. Each one relaxes elastically to its stress-free length.</p><p>Part 1 keeps its plastic strain <span class="eq">ε*₁ = ${(m.ep1*100).toFixed(3)} %</span>${m.st==='III'?`, part 2 keeps <span class="eq">ε*₂ = ${(m.ep2*100).toFixed(3)} %</span>`:''}. Together they are <b>Δ = ${f1(mis)} µm too long</b> to fit between the walls: the eigenstrain is incompatible.</p>`;}},
+    {name:'Force them back in',dur:2.8,cap:()=>{const m=load(uMax),r=unload(m,1).s1;return `<p>Putting the parts back between the walls enforces compatibility:</p><p><span class="eq">β(εᵉ + ε*₁) + (1−β)(εᵉ + ε*₂) = 0</span></p><p>So the common elastic strain is <span class="eq">εᵉ = −(βε*₁ + (1−β)ε*₂)</span> and</p><p><span class="eq">σ_res = E εᵉ = ${f0(r)} MPa</span></p><p>The plastic strain is the eigenstrain that generates the residual stress. Compression for β &lt; 0.5; zero for β = 0.5.</p>`;}}
+  ];
+  const P=Player(root,phases,draw);
+  return P;
+})();
+
+/* =========================================================
+   Scene 3 — frettage (shrink-fit) of pipes
+   ========================================================= */
+const S2=(function(){
+  const root=document.getElementById('s2'), svg=root.querySelector('.stage'), plot=root.querySelector('.plot');
+  const a=20,b=30,c=45,nu=0.3,alpha=12e-6, s=3.1, amp=150, cy=170;
+  let d=0.05;
+  bindRange('s2-d',v=>v+' µm',v=>{d=v/1000;P.refresh();});
+  function sol(){
+    const X=(c*c+b*b)/(c*c-b*b), Yv=(b*b+a*a)/(b*b-a*a);
+    const p=E*d/(b*(X+Yv));
+    const Ai=p*b*b/(b*b-a*a), Ao=p*b*b/(c*c-b*b);
+    return{p,
+      th:r=>r<=b?-Ai*(1+a*a/(r*r)):Ao*(1+c*c/(r*r)),
+      rr:r=>r<=b?-Ai*(1-a*a/(r*r)):Ao*(1-c*c/(r*r)),
+      ui_a:-2*Ai*a/E, ui_b:-p*b/E*(Yv-nu), uo_b:p*b/E*(X+nu), uo_c:2*Ao*c/E,
+      dT:1.5*d/(alpha*b)};
+  }
+  let st={k:0,h:0};
+  function ring(cx,rin,rout,thFn,k,heat,scale,label){
+    let g='';const N=16,w=(rout-rin)/N;
+    for(let j=0;j<N;j++){const rm=rin+w*(j+.5), rmm=thFn?thFn(j/(N-1)):0;g+=`<circle cx="${cx}" cy="${cy}" r="${rm}" style="fill:none;stroke:${thFn?sFill(rmm*k,scale):'var(--metal)'};stroke-width:${w+.6}"/>`;}
+    if(heat>0)g+=`<circle cx="${cx}" cy="${cy}" r="${(rin+rout)/2}" style="fill:none;stroke:var(--heat);stroke-width:${rout-rin};stroke-opacity:${.65*heat}"/>`;
+    g+=`<circle cx="${cx}" cy="${cy}" r="${rin}" style="fill:none;stroke:var(--fg);stroke-opacity:.5"/><circle cx="${cx}" cy="${cy}" r="${rout}" style="fill:none;stroke:var(--fg);stroke-opacity:.5"/>`;
+    return g;
+  }
+  function draw(i,k){
+    const S=sol(), e=ease(k);
+    let h=0,kc=0,xin=190,ghost=0;
+    if(i===0)ghost=1;
+    if(i===1){h=e;ghost=1-e;}
+    if(i===2){h=1;xin=lerp(190,560,e);}
+    if(i===3){h=1-k;kc=clamp(1-1.5*h,0,1);xin=560;}
+    if(i===4){h=0;kc=1;xin=560;}
+    st={k:kc,h,i,S};
+    const eth=1.5*d*h; // thermal radial expansion at r=b (mm)
+    const dpx=mm=>mm*s*amp;
+    // inner tube radii
+    const iIn=a*s+dpx(S.ui_a*kc), iOut=b*s+dpx(d+S.ui_b*kc);
+    // outer tube radii
+    const oIn=b*s+dpx(eth+S.uo_b*kc), oOut=c*s+dpx(eth*c/b+S.uo_c*kc);
+    const scale=Math.abs(S.th(a));
+    const thI=f=>S.th(lerp(a,b,f)), thO=f=>S.th(lerp(b,c,f));
+    let g='';
+    g+=ring(560,oIn,oOut,thO,kc,h,scale);
+    g+=ring(xin,iIn,iOut,thI,kc,0,scale);
+    // labels
+    g+=T(560,cy+oOut+26,'Outer tube','lbl','middle');
+    if(i<2)g+=T(xin,cy+iOut+26,'Inner tube','lbl','middle');
+    else g+=T(560,cy+4,'Inner','sm','middle');
+    if(ghost>0){g+=`<circle cx="560" cy="${cy}" r="${iOut}" style="fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 5;opacity:${ghost}"/>`;
+      g+=`<g style="opacity:${ghost}">`+T(560,cy+48,'dashed: inner tube','sm','middle')+T(560,cy+64,'outer radius b + δ','sm','middle')+`</g>`;
+      // radius callouts on inner tube
+      g+=`<g style="opacity:${ghost}"><line x1="${xin}" y1="${cy}" x2="${xin+iOut}" y2="${cy}" class="ax"/>`+T(xin+iOut/2,cy-6,'b + δ','sm','middle')+`<line x1="560" y1="${cy}" x2="${560-oIn}" y2="${cy}" class="ax"/>`+T(560-oIn/2,cy-6,'b','sm','middle')+`</g>`;
+    }
+    // heat label
+    if(h>0.02)g+=`<g style="opacity:${Math.min(1,h*1.5)}">`+T(560,cy-oOut-14,`+${Math.round(S.dT*h)} °C`,'lbl','middle').replace('class="lbl"','class="lbl" style="fill:var(--heat)"')+`</g>`;
+    // pressure arrows
+    if(kc>0.01){const R=(iOut+oIn)/2;for(let j=0;j<12;j++){const t=j*Math.PI/6+Math.PI/12,cx=560+R*Math.cos(t),cyy=cy+R*Math.sin(t),L=16*kc;g+=arrow(cx+Math.cos(t)*2,cyy+Math.sin(t)*2,cx-Math.cos(t)*L,cyy-Math.sin(t)*L,'var(--com)',2.2);}
+      g+=T(190,cy-10,`contact pressure`,'sm','middle')+T(190,cy+16,`p = ${f0(S.p*kc)} MPa`,'big','middle');}
+    if(i===0)g+=T(370,cy+4,'→','big','middle');
+    svg.innerHTML=g;
+    drawPlot();
+  }
+  const PX0=80,PX1=770,PY0=20,PY1=255;
+  function drawPlot(){
+    const S=st.S||sol(), k=st.k, lim=Math.max(Math.abs(S.th(a)),S.th(b+1e-6))*1.2;
+    const Xr=r=>PX0+(r-a)/(c-a)*(PX1-PX0), Yv=v=>(PY0+PY1)/2-v/lim*((PY1-PY0)/2);
+    let g='';
+    const step=lim>300?100:(lim>120?50:20);
+    for(let v=-Math.floor(lim/step)*step;v<=lim;v+=step){g+=`<line x1="${PX0}" y1="${Yv(v)}" x2="${PX1}" y2="${Yv(v)}" class="grid"/>`+T(PX0-8,Yv(v)+4,f0(v),'sm','end');}
+    for(let r=20;r<=45;r+=5){g+=T(Xr(r),PY1+18,r,'sm','middle');}
+    g+=`<line x1="${PX0}" y1="${Yv(0)}" x2="${PX1}" y2="${Yv(0)}" class="ax"/>`+T(PX1,PY1+36,'radius r (mm)','sm','end')+T(PX0-60,PY0+4,'MPa','sm');
+    g+=`<line x1="${Xr(b)}" y1="${PY0}" x2="${Xr(b)}" y2="${PY1}" style="stroke:var(--accent);stroke-dasharray:4 4"/>`+T(Xr(b)+6,PY0+12,'interface r = b','sm');
+    const seg=(r0,r1,fn)=>{const pts=[];for(let j=0;j<=60;j++){const r=lerp(r0,r1,j/60);pts.push([Xr(r),Yv(fn(r)*k)]);}return pts;};
+    const P2=pts=>pts.map((p,j)=>(j?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('');
+    const inn=seg(a,b-1e-6,S.th), out=seg(b+1e-6,c,S.th);
+    g+=`<path d="${P2(inn)}L${Xr(b)},${Yv(0)}L${Xr(a)},${Yv(0)}Z" style="fill:var(--com);fill-opacity:.22"/>`;
+    g+=`<path d="${P2(out)}L${Xr(c)},${Yv(0)}L${Xr(b)},${Yv(0)}Z" style="fill:var(--ten);fill-opacity:.22"/>`;
+    g+=`<path d="${P2(inn)}" style="fill:none;stroke:var(--com);stroke-width:3"/><path d="${P2(out)}" style="fill:none;stroke:var(--ten);stroke-width:3"/>`;
+    g+=`<path d="${P2(seg(a,b-1e-6,S.rr))}L${P2(seg(b+1e-6,c,S.rr)).slice(1)}" style="fill:none;stroke:var(--muted);stroke-width:2.5;stroke-dasharray:7 5"/>`;
+    if(k>0.05){
+      g+=T(Xr(a)+6,Yv(S.th(a)*k)+18,`σθ(a) = ${f0(S.th(a)*k)}`,'lbl');
+      g+=T(Xr(b)+8,Yv(S.th(b+1e-6)*k)-8,`σθ(b⁺) = +${f0(S.th(b+1e-6)*k)}`,'lbl');
+    }
+    // legend
+    [['σθ hoop, inner tube','var(--com)'],['σθ hoop, outer tube','var(--ten)'],['σr radial','var(--muted)','7 5']].forEach((l,j)=>{const y=PY1-52+j*18;g+=`<line x1="${PX1-210}" y1="${y}" x2="${PX1-182}" y2="${y}" style="stroke:${l[1]};stroke-width:3;${l[2]?'stroke-dasharray:'+l[2]:''}"/>`+T(PX1-176,y+4,l[0],'sm');});
+    if(k<0.01)g+=T((PX0+PX1)/2,Yv(0)-12,'no stress yet','sm','middle');
+    plot.innerHTML=g;
+  }
+  const phases=[
+    {name:'Two tubes that do not fit',dur:2.6,cap:()=>`<p>The inner tube's outer radius is <span class="eq">b + δ</span>, the outer tube's inner radius is <span class="eq">b</span>: a radial interference <b>δ = ${f0(d*1000)} µm</b>.</p><p>The two shapes are incompatible: assembled, they cannot both stay stress-free.</p>`},
+    {name:'Heat the outer tube',dur:2.6,cap:()=>{const S=sol();return `<p>Heating the outer tube by about <b>${Math.round(S.dT)} °C</b> gives it a thermal strain <span class="eq">αΔT</span> large enough to open a clearance.</p><p>A thermal strain is itself an eigenstrain: it changes the shape without creating stress.</p>`;}},
+    {name:'Slide the inner tube in',dur:2.2,cap:()=>`<p>The inner tube slides in freely. There is still no stress anywhere.</p>`},
+    {name:'Cool: contact and pressure',dur:3.6,live:true,cap:()=>{const S=sol();return `<p>As the outer tube cools, its thermal strain disappears. It touches the inner tube when <span class="eq">αΔT·b = δ</span>, then tries to shrink further.</p><p>${st.k>0?'Contact':'Once in contact, the'} pressure builds up to</p><p><span class="eq">p = Eδ(b²−a²)(c²−b²) / (2b³(c²−a²))</span></p><p><b>p = ${f0(S.p)} MPa</b>. The interface settles where <span class="eq">u_outer(b) − u_inner(b) = δ</span>.</p>`;}},
+    {name:'Residual stress field',dur:2.6,cap:()=>{const S=sol();return `<p>What remains is a <b>self-equilibrated</b> field with no external load:</p><p>inner tube in hoop compression, <span class="eq">σθ(a) = ${f0(S.th(a))} MPa</span>; outer tube in hoop tension, <span class="eq">σθ(b⁺) = +${f0(S.th(b+1e-6))} MPa</span>.</p><p>Across the wall, <span class="eq">∫σθ dr = −pb + pb = 0</span>.</p><p>Service pressure adds hoop tension at the bore, so this compressive residual stress lets the compound pipe carry more pressure.</p>`;}}
+  ];
+  const P=Player(root,phases,draw);
+  return P;
+})();
+
+/* ---------- shared helpers for the new scenes ---------- */
+function arcArrow(cx,cy,r,a0,a1,col,w){
+  w=w||2.5; const n=24, pts=[];
+  for(let j=0;j<=n;j++){const a=lerp(a0,a1,j/n);pts.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}
+  const dir=Math.sign(a1-a0), tx=-Math.sin(a1)*dir, ty=Math.cos(a1)*dir, [ex,ey]=pts[n], h=10;
+  const bx=ex-tx*h, by=ey-ty*h;
+  return `<path d="${pts.map((p,j)=>(j?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('')}" style="fill:none;stroke:${col};stroke-width:${w}"/>`+
+    `<path d="M${ex+tx*2},${ey+ty*2}L${bx-ty*6},${by+tx*6}L${bx+ty*6},${by-tx*6}Z" style="fill:${col}"/>`;
+}
+const pathOf=pts=>pts.map((p,j)=>(j?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join('');
+function axes(o){ // o: {x0,x1,y0,y1,X,Y,xt:[...],yt:[...],xf,yf,xl,yl}
+  let g='';
+  for(const v of o.yt){g+=`<line x1="${o.x0}" y1="${o.Y(v)}" x2="${o.x1}" y2="${o.Y(v)}" class="grid"/>`+T(o.x0-8,o.Y(v)+4,o.yf(v),'sm','end');}
+  for(const v of o.xt){g+=`<line x1="${o.X(v)}" y1="${o.y0}" x2="${o.X(v)}" y2="${o.y1}" class="grid"/>`+T(o.X(v),o.y1+16,o.xf(v),'sm','middle');}
+  g+=T(o.x1,o.y1+34,o.xl,'sm','end')+T(o.x0-8,o.y0-8,o.yl,'sm','end');
+  return g;
+}
+const crv=(arr,col,dash,w)=>`<path d="${pathOf(arr)}" style="fill:none;stroke:${col};stroke-width:${w||3};${dash?'stroke-dasharray:'+dash:''}" stroke-linejoin="round"/>`;
+const dot=(x,y,col,r)=>`<circle cx="${x}" cy="${y}" r="${r||5}" style="fill:${col};stroke:var(--surface);stroke-width:1.5"/>`;
+const HATCH=`<defs><pattern id="hatch2" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.5" height="7" style="fill:var(--plas)"/></pattern></defs>`;
+
+/* =========================================================
+   Scene 4 — elastoplastic bending
+   ========================================================= */
+const S3=(function(){
+  const root=document.getElementById('s3'), svg=root.querySelector('.stage'), plot=root.querySelector('.plot');
+  const sy=300, ey=sy/E; let mt=1.35;
+  bindRange('s3-m',v=>v.toFixed(2),v=>{mt=v;P.refresh();});
+  const xi=m=>m<=1?Infinity:Math.sqrt(3-2*m);
+  const sLoad=(eta,m)=>{const x=xi(m);return x===Infinity?sy*m*eta:sy*clamp(eta/x,-1,1);};
+  const kLoad=m=>m<=1?m:1/xi(m);
+  const epn=eta=>kLoad(mt)*eta-sLoad(eta,mt)/sy;      // plastic strain / εy
+  const kRes=()=>kLoad(mt)-mt;                         // residual curvature / κe
+  const sRes=eta=>sLoad(eta,mt)-sy*mt*eta;
+  const cx=270, Lh=190, x0=cx-Lh, cy=160, H=58, N=20, K0=48/(Lh*Lh*2.6), amp=60;
+  let st={};
+  function strips(kd,lenFn,sigFn,gap,plasticFn){
+    let g='';
+    for(let j=0;j<N;j++){
+      const e0=-1+2*j/N, e1=e0+2/N, em=(e0+e1)/2, half=Lh*(1+lenFn(em)), off=(j-(N-1)/2)*gap;
+      const top=[],bot=[];
+      for(let q=0;q<=30;q++){const x=cx-half+2*half*q/30, dy=-kd*(x-cx)*(x-cx);top.push([x,cy+e0*H+dy+off]);bot.push([x,cy+e1*H+dy+off]);}
+      const d=pathOf(top.concat(bot.reverse()))+'Z';
+      g+=`<path d="${d}" style="fill:${sFill(sigFn(em),sy)};stroke:${sFill(sigFn(em),sy)};stroke-width:.6"/>`;
+      if(plasticFn(em))g+=`<path d="${d}" style="fill:url(#hatch2)"/>`;
+    }
+    return g;
+  }
+  function draw(i,k){
+    const e=ease(k), xt=mt>1?xi(mt):9;
+    let g=HATCH, sig, kap, mNow, q=0;
+    if(i===0){mNow=mt*e;sig=eta=>sLoad(eta,mNow);kap=kLoad(mNow);
+      const xn=mNow>1?xi(mNow):9;
+      g+=strips(kap*K0,()=>0,sig,0,eta=>Math.abs(eta)>xn);}
+    else if(i===1){q=e;mNow=mt*(1-q);sig=eta=>sLoad(eta,mt)-sy*mt*q*eta;kap=kLoad(mt)-mt*q;
+      g+=strips(kap*K0,()=>0,sig,0,eta=>Math.abs(eta)>xt);}
+    else if(i===2){mNow=0;sig=eta=>sRes(eta)*(1-e);kap=kRes()*(1-e);
+      g+=strips(kap*K0,eta=>amp*ey*epn(eta)*e,sig,3*e,eta=>Math.abs(eta)>xt);}
+    else{mNow=0;sig=eta=>sRes(eta)*e;kap=0;
+      g+=strips(0,eta=>amp*ey*lerp(epn(eta),kRes()*eta,e),sig,3*(1-e),eta=>Math.abs(eta)>xt);
+      if(e>.6){const op=(e-.6)/.4;for(const s of [-1,1]){const xa=cx+s*Lh*(1+amp*ey*kRes()*-1), xb=cx+s*Lh*(1+amp*ey*kRes());
+        g+=`<line x1="${xa}" y1="${cy-H-8}" x2="${xb}" y2="${cy+H+8}" style="stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4;opacity:${op}"/>`;}
+        g+=T(cx,cy+H+28,'plane sections restored','sm','middle');}}
+    if(i===2&&e>.5)g+=T(cx,cy+H+28,'stress-free fibres: ends no longer on a straight line','sm','middle');
+    st={i,q,mNow,kap,sig};
+    // moment arrows
+    if(i<=1&&mNow>0.02){const w=1.5+2*mNow/1.5;const yl=cy-kap*K0*Lh*Lh;
+      g+=arcArrow(x0-6,yl,30,Math.PI/2,1.5*Math.PI,'var(--fg)',w)+arcArrow(cx+Lh+6,yl,30,Math.PI/2,-Math.PI/2,'var(--fg)',w);
+      g+=T(x0-44,yl+5,'M','big','end')+T(cx+Lh+44,yl+5,'M','big');}
+    // profile
+    const zx=640, sc=100/sy, top=cy-H, bot=cy+H;
+    g+=`<line x1="${zx}" y1="${top-14}" x2="${zx}" y2="${bot+14}" class="ax"/>`;
+    for(const s of [-1,1])g+=`<line x1="${zx+s*sy*sc}" y1="${top-6}" x2="${zx+s*sy*sc}" y2="${bot+6}" style="stroke:var(--muted);stroke-dasharray:3 4"/>`+T(zx+s*sy*sc,bot+24,(s<0?'−':'+')+'σy','sm','middle');
+    g+=T(zx,top-24,'σ(y) (MPa)','sm','middle')+T(zx-120,top+4,'top','sm','end')+T(zx-120,bot+4,'bottom','sm','end');
+    const prof=fn=>{const p=[[zx,top]];for(let j=0;j<=80;j++){const eta=-1+2*j/80;p.push([zx+fn(eta)*sc,cy+eta*H]);}p.push([zx,bot]);return p;};
+    if(i>=1){g+=crv(prof(eta=>sLoad(eta,mt)),'var(--muted)','5 4',1.5);
+      if(i===1)g+=crv([[zx-sy*mt*sc*q,top],[zx+sy*mt*sc*q,bot]],'var(--accent)','2 4',2);}
+    g+=`<path d="${pathOf(prof(sig))}Z" style="fill:var(--accent);fill-opacity:.18;stroke:var(--fg);stroke-width:2.2"/>`;
+    const sT=sig(-1), sB=sig(1);
+    g+=T(zx+sT*sc+(sT<0?-6:6),top+4,f0(sT),'lbl',sT<0?'end':'start')+T(zx+sB*sc+(sB<0?-6:6),bot+4,f0(sB),'lbl',sB<0?'end':'start');
+    if(i>=1&&i!==2){const em=xt<1?xt:1, sm=sig(em);if(Math.abs(sm)>3)g+=T(zx+sm*sc+8,cy+em*H-6,f0(sm),'sm');}
+    svg.innerHTML=g;
+    drawPlot();
+  }
+  const PX0=80,PX1=770,PY0=22,PY1=240,XM=3,YM=1.7;
+  const X=v=>PX0+v/XM*(PX1-PX0), Y=v=>PY1-v/YM*(PY1-PY0);
+  const Mk=k=>k<=1?k:(3-1/(k*k))/2;
+  function drawPlot(){
+    let g=axes({x0:PX0,x1:PX1,y0:PY0,y1:PY1,X,Y,xt:[0,.5,1,1.5,2,2.5,3],yt:[0,.5,1,1.5],xf:v=>v.toString(),yf:v=>v.toString(),xl:'curvature κ/κₑ',yl:'M/Mₑ'});
+    g+=`<line x1="${PX0}" y1="${Y(1.5)}" x2="${PX1}" y2="${Y(1.5)}" style="stroke:var(--accent);stroke-dasharray:6 4"/>`+T(PX1-4,Y(1.5)-6,'Mₚ = 1.5 Mₑ','sm','end');
+    const kmax=kLoad(mt), kNow=st.i===0?st.kap:kmax, arr=[];
+    for(let j=0;j<=80;j++){const kk=kNow*j/80;arr.push([X(kk),Y(Mk(kk))]);}
+    g+=crv(arr,'var(--fg)');
+    if(st.i>=1){const q=st.i===1?st.q:1;g+=crv([[X(kmax),Y(mt)],[X(kmax-mt*q),Y(mt*(1-q))]],'var(--accent)','6 4',2.5);}
+    const cxp=st.i===0?st.kap:(st.i===1?st.kap:kRes()), cyp=st.i===0?st.mNow:(st.i===1?st.mNow:0);
+    g+=dot(X(cxp),Y(cyp),'var(--accent)',6);
+    if(st.i>=2||(st.i===1&&st.q>.98))g+=T(X(kRes())+10,Y(0)-10,`κ_res/κₑ = ${kRes().toFixed(2)}`,'lbl');
+    plot.innerHTML=g;
+  }
+  const phases=[
+    {name:'Load: apply M',dur:5.5,live:true,cap:()=>{const m=st.mNow||0;return `<p>A bending moment is applied. Up to <span class="eq">M = Mₑ</span> the response is elastic: <span class="eq">σ = My/I</span>.</p><p>Beyond, the outer fibres yield at ±σy and the elastic core shrinks to <span class="eq">|y| &lt; ξh</span>, with <span class="eq">M/Mₑ = (3 − ξ²)/2</span>.</p><p>Now <span class="eq">M/Mₑ = ${m.toFixed(2)}</span>${m>1?`, <span class="eq">ξ = ${xi(m).toFixed(2)}</span>`:''}.</p>`;}},
+    {name:'Unload: remove M',dur:3,cap:()=>`<p>Unloading is elastic: subtract the linear stress <span class="eq">M̃y/I = σy (M̃/Mₑ) y/h</span> (dotted line).</p><p><span class="eq">σ_res = σ_load − σy (M̃/Mₑ) y/h</span></p><p>At the surfaces <span class="eq">σ_res = ∓σy(M̃/Mₑ − 1) = ${f0(sRes(1))} MPa</span> on the side that was in tension: the sign reverses. The core keeps the opposite sign.</p>${mt<=1?'<p>The load stayed elastic: no plastic strain, no residual stress.</p>':''}`},
+    {name:'Free the fibres',dur:2.8,cap:()=>`<p>Slice the beam into thin fibres and release them. Each relaxes to its stress-free length, set by its plastic strain εp(y).</p><p>Elastic core: <span class="eq">εp = 0</span>. Plastic zones: εp grows with |y|. The fibre ends no longer lie on a straight line, so plane sections cannot stay plane: this eigenstrain is <b>incompatible</b>.</p>`},
+    {name:'Reassemble: plane sections',dur:3,cap:()=>`<p>Bernoulli kinematics forces a linear strain <span class="eq">ε = κy</span>. Each fibre carries the elastic strain <span class="eq">κy − εp(y)</span>, with κ such that N = 0 and M = 0.</p><p>The result is exactly σ_res, and the beam keeps a residual curvature <span class="eq">κ_res/κₑ = ${kRes().toFixed(2)}</span>.</p>`}
+  ];
+  const P=Player(root,phases,draw);
+  return P;
+})();
+
+/* =========================================================
+   Scene 5 — bimetallic strip
+   ========================================================= */
+const S4=(function(){
+  const root=document.getElementById('s4'), svg=root.querySelector('.stage');
+  const L1={name:'Steel',E:210000,a:12e-6,y0:0,y1:1}, L2={name:'Copper',E:120000,a:17e-6,y0:1,y1:2};
+  let dT=150;
+  bindRange('s4-dt',v=>v+' °C',v=>{dT=v;P.refresh();});
+  function solve(){
+    let A=0,B=0,C=0,NA=0,MB=0;
+    for(const l of [L1,L2]){const a=l.E*(l.y1-l.y0),b=l.E*(l.y1*l.y1-l.y0*l.y0)/2,c=l.E*(l.y1**3-l.y0**3)/3;A+=a;B+=b;C+=c;NA+=a*l.a*dT;MB+=b*l.a*dT;}
+    const det=A*C-B*B;
+    return{e0:(NA*C-B*MB)/det,k:(A*MB-B*NA)/det,ef:NA/A};
+  }
+  const sig=(l,y,e0,k)=>l.E*(e0+k*y-l.a*dT);
+  const cx=295,Lh=170,pxmm=Lh/30,ampS=60,ampD=30,yI=165,tp=26,NS=6;
+  let st={};
+  function draw(i,k){
+    const S=solve(), e=ease(k);
+    let g='', heat=0, gap=0, kd=0, len, sg;
+    if(i===0){len=()=>0;sg=()=>0;}
+    if(i===1){heat=e;gap=18*e;len=(l)=>ampS*l.a*dT*e;sg=()=>0;}
+    if(i===2){heat=1;gap=18*(1-e);len=(l)=>ampS*lerp(l.a*dT,S.ef,e);sg=(l,y)=>sig(l,y,S.ef,0)*e;}
+    if(i===3){heat=1;len=(l,y)=>ampS*(S.ef+(S.e0+S.k*y-S.ef)*e);sg=(l,y)=>sig(l,y,lerp(S.ef,S.e0,e),S.k*e);kd=S.k*e;}
+    st={i,S,e,sg};
+    const scale=Math.max(...[L1,L2].flatMap(l=>[l.y0,l.y1].map(y=>Math.max(Math.abs(sig(l,y,S.e0,S.k)),Math.abs(sig(l,y,S.ef,0))))));
+    const defl=x=>{const X=(x-cx)/pxmm;return kd*X*X/2*pxmm*ampD;};
+    for(const l of [L1,L2]){
+      for(let j=0;j<NS;j++){
+        const ya=l.y0+(l.y1-l.y0)*j/NS, yb=ya+(l.y1-l.y0)/NS, ym=(ya+yb)/2, half=Lh*(1+len(l,ym));
+        const off=l===L2?-gap:0, sa=yI-(ya-1)*tp+off, sb=yI-(yb-1)*tp+off;
+        const top=[],bot=[];
+        for(let q=0;q<=30;q++){const x=cx-half+2*half*q/30,d=defl(x);bot.push([x,sa+d]);top.push([x,sb+d]);}
+        const dd=pathOf(top.concat(bot.reverse()))+'Z', c=sFill(sg(l,ym),scale);
+        g+=`<path d="${dd}" style="fill:${c};stroke:${c};stroke-width:.6"/>`;
+      }
+      // outline
+      const half0=Lh*(1+len(l,(l.y0+l.y1)/2)), off=l===L2?-gap:0, ya=yI-(l.y0-1)*tp+off, yb=yI-(l.y1-1)*tp+off;
+      const t=[],b=[];for(let q=0;q<=30;q++){const x=cx-half0+2*half0*q/30,d=defl(x);b.push([x,ya+d]);t.push([x,yb+d]);}
+      g+=`<path d="${pathOf(t.concat(b.reverse()))}Z" style="fill:${heat>0?'var(--heat)':'none'};fill-opacity:${.28*heat};stroke:var(--fg);stroke-opacity:.6"/>`;
+      g+=T(cx-half0-10,(ya+yb)/2+5+defl(cx-half0),l.name,'sm','end');
+    }
+    if(i===1||i===2){const h1=Lh*(1+len(L1,.5)),h2=Lh*(1+len(L2,1.5));if(Math.abs(h2-h1)>2){const y=yI-tp-gap-14;g+=`<line x1="${cx+h1}" y1="${y}" x2="${cx+h2}" y2="${y}" style="stroke:var(--accent);stroke-width:2"/>`+T(cx+Math.max(h1,h2)+8,y+4,'mismatch','sm');}}
+    if(heat>0)g+=T(cx,58,`ΔT = +${Math.round(dT*(i===1?e:1))} °C`,'lbl','middle').replace('class="lbl"','class="lbl" style="fill:var(--heat)"');
+    if(i===2&&e>.8)g+=T(cx,yI+tp+40,'flat: N = 0 but the forces form a couple, M ≠ 0','sm','middle');
+    if(i===3&&e>.8)g+=T(cx,yI+tp+64,`radius of curvature R = ${f0(1/S.k)} mm`,'lbl','middle');
+    // profile
+    const zx=655, top=70, bot=250, ymm=y=>bot-(y/2)*(bot-top), sc=105/scale;
+    g+=`<line x1="${zx}" y1="${top-10}" x2="${zx}" y2="${bot+10}" class="ax"/>`+`<line x1="${zx-130}" y1="${ymm(1)}" x2="${zx+130}" y2="${ymm(1)}" class="grid" style="stroke-dasharray:4 4"/>`;
+    g+=T(zx,top-20,'σ(y) (MPa)','sm','middle')+T(zx+8,ymm(1.12)+4,'copper','sm')+T(zx-8,ymm(0.88)+4,'steel','sm','end');
+    if(i>=2){for(const l of [L1,L2]){const p=[[zx,ymm(l.y0)]];for(let j=0;j<=20;j++){const y=lerp(l.y0,l.y1,j/20);p.push([zx+sg(l,y)*sc,ymm(y)]);}p.push([zx,ymm(l.y1)]);
+        g+=`<path d="${pathOf(p)}Z" style="fill:${sg(l,(l.y0+l.y1)/2)<0?'var(--com)':'var(--ten)'};fill-opacity:.3;stroke:var(--fg);stroke-width:2"/>`;
+        for(const y of [l.y0,l.y1]){const v=sg(l,y);g+=T(zx+v*sc+(v<0?-6:6),ymm(y)+(y===l.y0?-4:14),f0(v),'sm',v<0?'end':'start');}}}
+    else g+=T(zx,(top+bot)/2,'no stress','sm','middle');
+    svg.innerHTML=g;
+  }
+  const phases=[
+    {name:'Bonded strip, room temperature',dur:1.8,cap:()=>`<p>Two layers bonded at room temperature: steel at the bottom, copper on top, 1 mm each. No stress.</p>`},
+    {name:'Cut and heat by ΔT',dur:2.8,cap:()=>`<p>Cut the bond in thought, then heat by <b>ΔT = ${dT} °C</b>. Each layer expands freely by <span class="eq">αΔT</span>: copper (17×10⁻⁶/K) more than steel (12×10⁻⁶/K).</p><p>Free mismatch <span class="eq">ΔαΔT = ${(5e-6*dT*100).toFixed(3)} %</span>: the thermal eigenstrain is incompatible across the interface.</p>`},
+    {name:'Force equal lengths, flat',dur:2.8,cap:()=>{const S=solve();return `<p>Force both layers to the same length while keeping the strip flat: copper is compressed (<span class="eq">${f0(sig(L2,1.5,S.ef,0))} MPa</span>), steel is stretched (<span class="eq">+${f0(sig(L1,.5,S.ef,0))} MPa</span>).</p><p>The axial forces cancel (N = 0), but they act at different heights: a bending moment remains.</p>`;}},
+    {name:'Release: the strip bends',dur:3,cap:()=>{const S=solve();return `<p>Released, the strip bends until M = 0 too. The strain becomes linear across the thickness, <span class="eq">ε = ε₀ + κy</span>, and the stress jumps at the interface.</p><p>Radius of curvature <b>R = ${f0(1/S.k)} mm</b>. A thin part shows residual stress <i>and</i> a deformed shape (slide 13). Cooling back to room temperature removes everything: purely thermal eigenstrains are reversible.</p>`;}}
+  ];
+  const P=Player(root,phases,draw);
+  return P;
+})();
+
+/* =========================================================
+   Scene 6 — elastoplastic composite (iso-strain)
+   ========================================================= */
+const S5=(function(){
+  const root=document.getElementById('s5'), svg=root.querySelector('.stage'), plot=root.querySelector('.plot');
+  const Ef=400000, Em=70000, sy=100;
+  let f=0.3, eMax=0.005;
+  bindRange('s5-f',v=>v.toFixed(2),v=>{f=v;P.refresh();});
+  bindRange('s5-e',v=>v.toFixed(2)+' %',v=>{eMax=v/100;P.refresh();});
+  const Ec=()=>f*Ef+(1-f)*Em;
+  function load(e){const sf=Ef*e, sm=Math.min(Em*e,sy);return{e,sf,sm,sb:f*sf+(1-f)*sm,ep:Math.max(0,e-sy/Em)};}
+  function unload(q){
+    const m=load(eMax), dS=m.sb*q, cap1=Ec()*(m.sm+sy)/Em;
+    let de, sm;
+    if(dS<=cap1){de=dS/Ec();sm=m.sm-Em*de;}
+    else{de=(m.sm+sy)/Em+(dS-cap1)/(f*Ef);sm=-sy;}
+    const e=m.e-de; return{e,sf:m.sf-Ef*de,sm,sb:m.sb-dS,ep:e-sm/Em,rev:dS>cap1};
+  }
+  const x0=110, Lb=380, top=72, H=150, amp=15;
+  let st={};
+  function bands(){const hf=H*f/3, hm=H*(1-f)/4, out=[];let y=top;for(let j=0;j<7;j++){const fib=j%2===1,h=fib?hf:hm;out.push({fib,y,h});y+=h;}return out;}
+  function draw(i,k){
+    const e=ease(k), R=unload(1);
+    let cur, lenF, lenM, sF, sM, gap=0, force;
+    if(i===0){cur=load(eMax*e);lenF=lenM=cur.e;sF=cur.sf;sM=cur.sm;force=cur.sb;}
+    else if(i===1){cur=unload(e);lenF=lenM=cur.e;sF=cur.sf;sM=cur.sm;force=cur.sb;}
+    else if(i===2){cur=R;lenF=lerp(R.e,0,e);lenM=lerp(R.e,R.ep,e);sF=R.sf*(1-e);sM=R.sm*(1-e);gap=6*e;force=0;}
+    else{cur=R;lenF=lerp(0,R.e,e);lenM=lerp(R.ep,R.e,e);sF=R.sf*e;sM=R.sm*e;gap=6*(1-e);force=0;}
+    st={i,k:e,cur};
+    const plastic=i===0?cur.ep>1e-9:load(eMax).ep>1e-9;
+    let g=HATCH;
+    // grip
+    g+=`<line x1="${x0}" y1="${top-16}" x2="${x0}" y2="${top+H+30}" style="stroke:var(--fg);stroke-width:2.5"/>`;
+    for(let yy=top-10;yy<top+H+30;yy+=13)g+=`<line x1="${x0}" y1="${yy}" x2="${x0-12}" y2="${yy-10}" style="stroke:var(--fg);stroke-width:1.2"/>`;
+    const sfScale=Ef*eMax;
+    bands().forEach((b,j)=>{
+      const off=(j-3)*gap, w=Lb*(1+amp*(b.fib?lenF:lenM)), c=b.fib?sFill(sF,sfScale):sFill(sM,sy);
+      g+=`<rect x="${x0}" y="${b.y+off}" width="${w}" height="${b.h}" style="fill:${c};stroke:var(--fg);stroke-opacity:${b.fib?.6:.25}"/>`;
+      if(!b.fib&&plastic)g+=`<rect x="${x0}" y="${b.y+off}" width="${w}" height="${b.h}" style="fill:url(#hatch2);opacity:.75"/>`;
+    });
+    const bs=bands(), wF=Lb*(1+amp*lenF), wM=Lb*(1+amp*lenM);
+    g+=T(x0+12,bs[1].y+bs[1].h/2+5+(-2)*gap,'fibre','sm')+T(x0+12,bs[0].y+bs[0].h/2+5-3*gap,'matrix','sm');
+    // end plate + force
+    if(i<=1){const xe=x0+wF;g+=`<rect x="${xe}" y="${top-6}" width="8" height="${H+12}" style="fill:var(--fg)"/>`;
+      if(force>2){const fl=force/(Ef*0.01*0.6+sy)*160+10;g+=arrow(xe+12,top+H/2,xe+12+fl,top+H/2,'var(--fg)',3.5)+T(xe+18+fl,top+H/2+5,'F','big');}}
+    if(i>=2&&Math.abs(wM-wF)>2){const y=top+H+18+3*gap;g+=`<line x1="${x0+Math.min(wF,wM)}" y1="${y}" x2="${x0+Math.max(wF,wM)}" y2="${y}" style="stroke:var(--accent);stroke-width:2.5"/>`+T(x0+Math.max(wF,wM)+8,y+5,i===2?'matrix longer by εp·L':'mismatch closing','sm');}
+    // readout
+    const rows=[['ε (%)',(cur.e*100).toFixed(3)],['σ̄ = F/A (MPa)',f0(i<=1?cur.sb:0)],['σ fibres (MPa)',f0(sF)],['σ matrix (MPa)',f0(sM)]];
+    rows.forEach((r,j)=>{g+=T(600,top+12+j*24,r[0],'sm')+T(790,top+12+j*24,r[1],'lbl','end');});
+    svg.innerHTML=g;
+    drawPlot();
+  }
+  function drawPlot(){
+    const R=unload(1), m=load(eMax);
+    const pA={x0:70,x1:380,y0:24,y1:250}, pB={x0:480,x1:780,y0:24,y1:250};
+    const XA=e=>pA.x0+e/0.01*(pA.x1-pA.x0), yAmax=Math.max(500,Ef*eMax*1.1), YA=v=>pA.y1-(v+0.06*yAmax)/(1.06*yAmax)*(pA.y1-pA.y0);
+    const XB=e=>pB.x0+e/0.01*(pB.x1-pB.x0), YB=v=>pB.y1-(v+150)/300*(pB.y1-pB.y0);
+    const step=yAmax>2500?1000:(yAmax>1200?500:200);
+    const yt=[];for(let v=0;v<=yAmax;v+=step)yt.push(v);
+    let g=axes({...pA,X:XA,Y:YA,xt:[0,.0025,.005,.0075,.01],yt,xf:v=>(v*100).toFixed(2),yf:f0,xl:'strain ε (%)',yl:'MPa'});
+    g+=axes({...pB,X:XB,Y:YB,xt:[0,.0025,.005,.0075,.01],yt:[-150,-100,-50,0,50,100,150],xf:v=>(v*100).toFixed(2),yf:f0,xl:'strain ε (%)',yl:'MPa'});
+    g+=T(pA.x0+6,pA.y0+12,'fibres and composite','sm')+T(pB.x0+6,pB.y0+12,'matrix','sm');
+    g+=`<line x1="${pA.x0}" y1="${YA(0)}" x2="${pA.x1}" y2="${YA(0)}" class="ax"/><line x1="${pB.x0}" y1="${YB(0)}" x2="${pB.x1}" y2="${YB(0)}" class="ax"/>`;
+    for(const v of [sy,-sy])g+=`<line x1="${pB.x0}" y1="${YB(v)}" x2="${pB.x1}" y2="${YB(v)}" style="stroke:var(--accent);stroke-dasharray:5 4"/>`;
+    g+=T(pB.x1-4,YB(sy)-6,'+σy','sm','end')+T(pB.x1-4,YB(-sy)+16,'−σy','sm','end');
+    const eNow=st.i===0?st.cur.e:eMax, L=[];for(let j=0;j<=80;j++)L.push(load(eNow*j/80));
+    g+=crv(L.map(p=>[XA(p.e),YA(p.sf)]),'var(--ten)')+crv(L.map(p=>[XA(p.e),YA(p.sb)]),'var(--fg)','2 5',2.5)+crv(L.map(p=>[XB(p.e),YB(p.sm)]),'var(--com)');
+    if(st.i>=1){const q=st.i===1?st.k:1,U=[];for(let j=0;j<=60;j++)U.push(unload(q*j/60));
+      g+=crv(U.map(p=>[XA(p.e),YA(p.sf)]),'var(--ten)','6 4',2)+crv(U.map(p=>[XA(p.e),YA(p.sb)]),'var(--fg)','2 5',1.5)+crv(U.map(p=>[XB(p.e),YB(p.sm)]),'var(--com)','6 4',2);}
+    const c=st.cur;
+    if(st.i<=1){g+=dot(XA(c.e),YA(c.sf),'var(--ten)')+dot(XA(c.e),YA(c.sb),'var(--fg)')+dot(XB(c.e),YB(c.sm),'var(--com)');}
+    else{g+=dot(XA(R.e),YA(R.sf),'var(--ten)',6)+dot(XB(R.e),YB(R.sm),'var(--com)',6)+T(XA(R.e)+10,YA(R.sf)-8,`σf = ${f0(R.sf)}`,'lbl')+T(XB(R.e)+10,YB(R.sm)-8,`σm = ${f0(R.sm)}`,'lbl');}
+    [['σ fibres','var(--ten)'],['σ̄ composite','var(--fg)','2 5']].forEach((l,j)=>{const y=pA.y0+32+j*18;g+=`<line x1="${pA.x0+8}" y1="${y}" x2="${pA.x0+36}" y2="${y}" style="stroke:${l[1]};stroke-width:3;${l[2]?'stroke-dasharray:'+l[2]:''}"/>`+T(pA.x0+42,y+4,l[0],'sm');});
+    plot.innerHTML=g;
+  }
+  const phases=[
+    {name:'Load in tension',dur:5.5,live:true,cap:()=>{const c=st.cur||load(0);return `<p>Fibres and matrix are bonded side by side and share the same strain (iso-strain). The matrix yields at <span class="eq">ε = σy/Eₘ = 0.143 %</span>; beyond, the fibres carry all the extra load.</p><p><span class="eq">σ̄ = f σf + (1−f) σm</span></p><p>Now ε = ${(c.e*100).toFixed(3)} %, matrix ${c.ep>0?'<b>plastic</b>':'elastic'}.</p>`;}},
+    {name:'Unload: F → 0',dur:3,live:true,cap:()=>{const R=unload(1);return `<p>The force is removed. Both phases unload elastically together, with the composite modulus <span class="eq">E_c = fE_f + (1−f)Eₘ</span>, so the matrix drops into compression.</p>${R.rev?'<p>Here it even reaches <b>−σy and yields in reverse</b>, which is why fibre composites show a strong Bauschinger effect.</p>':''}<p>Residual: fibres <span class="eq">${f0(R.sf)} MPa</span>, matrix <span class="eq">${f0(R.sm)} MPa</span>.</p>`;}},
+    {name:'Separate the phases',dur:2.8,cap:()=>{const R=unload(1);return `<p>Debond the phases in thought. The elastic fibres return to their initial length; the matrix keeps its plastic strain <span class="eq">εp = ${(R.ep*100).toFixed(3)} %</span>.</p><p>The matrix is now longer than the fibres: the eigenstrain is incompatible.</p>`;}},
+    {name:'Bond them again',dur:3,cap:()=>{const R=unload(1);return `<p>Bonded again, both phases share one length (compatibility) and the net force is zero (equilibrium):</p><p><span class="eq">f σf + (1−f) σm = 0</span></p><p><span class="eq">σm = −f E_f Eₘ εp / E_c = ${f0(R.sm)} MPa</span>, <span class="eq">σf = ${f0(R.sf)} MPa</span>.</p><p>Same mechanism as the bar, with the parts in parallel instead of in series.</p>`;}}
+  ];
+  const P=Player(root,phases,draw);
+  return P;
+})();
+
+/* ---------- tabs ---------- */
+const players=[S0,S1,S2,S3,S4,S5], tabs=[...document.querySelectorAll('.tab')], scenes=[0,1,2,3,4,5].map(i=>document.getElementById('s'+i));
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+function show(n){
+  tabs.forEach(t=>t.setAttribute('aria-selected',+t.dataset.k===n?'true':'false'));
+  scenes.forEach((s,i)=>{s.hidden=i!==n;if(i!==n)players[i].pause();});
+  if(reduce)players[n].toEnd(); else if(players[n].t===0)players[n].play();
+}
+const tabNames=['principle','bar','frettage','bending','bimetal','composite'];
+tabs.forEach(t=>t.addEventListener('click',()=>{const n=+t.dataset.k;show(n);
+  try{if(window.goatcounter&&window.goatcounter.count)window.goatcounter.count({path:'tab-'+tabNames[n],title:t.textContent.trim(),event:true});}catch(e){}}));
+players.forEach(p=>p.refresh());
+const hash=(location.hash||'').slice(1); const start={principle:0,bar:1,frettage:2,bending:3,bimetal:4,composite:5}[hash]||0;
+show(start);
+})();
+</script>
+<!-- Visit counter: GoatCounter (privacy-friendly, no cookies) -->
+<script data-goatcounter="https://rkubler.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

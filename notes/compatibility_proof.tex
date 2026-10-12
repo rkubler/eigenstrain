@@ -1,0 +1,207 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\eps}{\varepsilon}
+\newcommand{\teps}{\underset{\sim}{\varepsilon}}
+\newcommand{\rot}{\operatorname{rot}}
+\newcommand{\Inc}{\operatorname{Inc}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[3]{\frac{\partial^2 #1}{\partial #2\,\partial #3}}
+
+\title{The Compatibility Equations\\[2pt]\large Statement and Proof}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Setting and notation}
+
+Let $\Omega\subset\mathbb{R}^3$ be an open, connected domain and $\boldsymbol{u}:\Omega\to\mathbb{R}^3$
+a displacement field of class $C^3$. Under the small-strain hypothesis, the linearised strain tensor $\teps$ is
+\begin{equation}\label{eq:strain}
+  \eps_{ij} \;=\; \tfrac12\left(\pd{u_i}{x_j}+\pd{u_j}{x_i}\right) = \tfrac12\left(u_{i,j}+u_{j,i}\right),
+\end{equation}
+where a comma denotes partial differentiation and repeated indices are summed from $1$ to $3$.
+$\teps$ is symmetric: $\eps_{ij}=\eps_{ji}$.
+
+Equation~\eqref{eq:strain} gives six strain components in terms of only three displacement components,
+so a prescribed symmetric field $\teps$ does not, in general, derive from any displacement.
+The \emph{compatibility equations} are the conditions $\teps$ must satisfy for such a $\boldsymbol u$ to exist.
+
+\section{Statement}
+
+\begin{theorem}\label{thm:main}
+Let $\teps$ be a symmetric tensor field of class $C^2$ on $\Omega$, and consider the equations
+\begin{equation}\label{eq:compat}
+  \boxed{\;
+  \pdd{\eps_{ij}}{x_k}{x_k}+\pdd{\eps_{kk}}{x_i}{x_j}-\pdd{\eps_{jk}}{x_i}{x_k}-\pdd{\eps_{ik}}{x_j}{x_k}=0,
+  \qquad\text{equivalently}\qquad
+  \Inc(\teps)=\rot\rot(\teps)=0.\;}
+\end{equation}
+\begin{enumerate}
+  \item[(a)] \textbf{Necessity.} If $\teps$ derives from a displacement $\boldsymbol u\in C^3(\Omega)$ through~\eqref{eq:strain}, then~\eqref{eq:compat} holds.
+  \item[(b)] \textbf{Sufficiency.} If $\Omega$ is simply connected and $\teps$ satisfies~\eqref{eq:compat}, there exists $\boldsymbol u\in C^3(\Omega)$ satisfying~\eqref{eq:strain}, unique up to an infinitesimal rigid-body displacement $\boldsymbol a+\boldsymbol b\times\boldsymbol x$.
+\end{enumerate}
+\end{theorem}
+
+Throughout, we use the following auxiliary quantities:
+\begin{align}
+  R_{ij} &:= \eps_{ij,kk}+\eps_{kk,ij}-\eps_{jk,ik}-\eps_{ik,jk}
+          &&\text{(left-hand side of \eqref{eq:compat})},\label{eq:R}\\
+  \eta_{mn} &:= e_{mik}\,e_{njl}\,\eps_{ij,kl} = \big(\rot\rot\teps\big)_{mn}
+          &&\text{(incompatibility tensor)},\label{eq:eta}\\
+  C_{ijkl} &:= \eps_{ij,kl}+\eps_{kl,ij}-\eps_{ik,jl}-\eps_{jl,ik}
+          &&\text{(Saint-Venant tensor)},\label{eq:C}
+\end{align}
+where $e_{mik}$ is the Levi-Civita permutation symbol. In~\eqref{eq:eta}, $\rot$ is applied once on each index of $\teps$, so $\rot\rot\teps$ is a symmetric second-order tensor. Note that $R_{ij}=C_{ijkk}$ (set $l=k$ in~\eqref{eq:C} and sum).
+
+\section{Proof of necessity}
+
+\begin{proof}[Proof of (a)]
+Since $\boldsymbol u\in C^3$, partial derivatives commute (Schwarz), so the order of indices after the comma is irrelevant. From~\eqref{eq:strain}:
+\begin{align*}
+  \eps_{ij,kk} &= \tfrac12\left(u_{i,jkk}+u_{j,ikk}\right), &
+  \eps_{kk,ij} &= u_{k,kij},\\
+  \eps_{jk,ik} &= \tfrac12\left(u_{j,ikk}+u_{k,ijk}\right), &
+  \eps_{ik,jk} &= \tfrac12\left(u_{i,jkk}+u_{k,ijk}\right).
+\end{align*}
+Hence
+\[
+  R_{ij}
+  = \tfrac12 u_{i,jkk}+\tfrac12 u_{j,ikk}+u_{k,ijk}
+   -\tfrac12 u_{j,ikk}-\tfrac12 u_{k,ijk}
+   -\tfrac12 u_{i,jkk}-\tfrac12 u_{k,ijk}
+  =0 .
+\]
+The same computation applied to~\eqref{eq:C} gives
+$2C_{ijkl}=(u_{i,jkl}-u_{i,kjl})+(u_{j,ikl}-u_{j,lik})+(u_{k,lij}-u_{k,ijl})+(u_{l,kij}-u_{l,jik})=0$,
+so the full Saint-Venant equations $C_{ijkl}=0$ hold as well; by Section~\ref{sec:equiv}, so does $\Inc(\teps)=0$.
+\end{proof}
+
+\section{Equivalence of the three forms}\label{sec:equiv}
+
+\begin{proposition}\label{prop:equiv}
+For any symmetric $C^2$ field $\teps$ in dimension 3,
+\[
+  R=0 \iff \Inc(\teps)=0 \iff C=0 .
+\]
+\end{proposition}
+
+\begin{proof}
+\emph{(i) $R \leftrightarrow \eta$.} Expand the product of permutation symbols as a determinant of Kronecker deltas:
+\[
+  e_{mik}e_{njl}=\delta_{mn}(\delta_{ij}\delta_{kl}-\delta_{il}\delta_{kj})
+  -\delta_{mj}(\delta_{in}\delta_{kl}-\delta_{il}\delta_{kn})
+  +\delta_{ml}(\delta_{in}\delta_{kj}-\delta_{ij}\delta_{kn}).
+\]
+Contracting with $\eps_{ij,kl}$ and using the symmetry of $\teps$:
+\[
+  \eta_{mn}
+  =\delta_{mn}\big(\eps_{ii,kk}-\eps_{ik,ik}\big)
+   -\eps_{mn,kk}+\eps_{im,in}+\eps_{nk,km}-\eps_{ii,mn}
+  =\delta_{mn}\big(\Delta\tr\teps-\operatorname{div}\operatorname{div}\teps\big)-R_{mn}.
+\]
+Taking the trace of~\eqref{eq:R} gives $\tr R = 2\big(\Delta\tr\teps-\operatorname{div}\operatorname{div}\teps\big)$, so
+\begin{equation}\label{eq:etaR}
+  \eta = -R+\tfrac12(\tr R)\,I,
+  \qquad\text{and, taking the trace,}\qquad
+  R = -\eta+(\tr\eta)\,I .
+\end{equation}
+Therefore $R=0\iff\eta=0$.
+
+\smallskip
+\emph{(ii) $\eta \leftrightarrow C$.} Using $\eps_{ij}=\eps_{ji}$ and commutation of derivatives, one checks directly from~\eqref{eq:C}:
+\[
+  C_{ijkl}=-C_{kjil}=-C_{ilkj}=C_{klij},
+\]
+i.e.\ $C$ is antisymmetric in $(i,k)$ and in $(j,l)$. Contracting~\eqref{eq:C} with $e_{mik}e_{njl}$, the last two terms (symmetric in $(i,k)$) drop out and the first two give equal contributions, so
+\[
+  e_{mik}e_{njl}\,C_{ijkl}=2\eta_{mn}.
+\]
+Conversely, an object antisymmetric in $(i,k)$ and $(j,l)$ is recovered from this contraction via $e_{mik}e_{mab}=\delta_{ia}\delta_{kb}-\delta_{ib}\delta_{ka}$:
+\[
+  \tfrac12\,e_{mik}e_{njl}\,\eta_{mn}
+  =\tfrac14(\delta_{ia}\delta_{kb}-\delta_{ib}\delta_{ka})(\delta_{jc}\delta_{ld}-\delta_{jd}\delta_{lc})\,C_{acbd}
+  =\tfrac14\big(C_{ijkl}-C_{ilkj}-C_{kjil}+C_{klij}\big)=C_{ijkl}.
+\]
+Thus $C=0\iff\eta=0$.
+\end{proof}
+
+\begin{remark}
+In 3D, $C$ has $81$ components but, by its symmetries, only $6$ are independent: those of the symmetric tensor $\eta$. This is why~\eqref{eq:compat}, which has $6$ components ($R$ is symmetric), already contains the full Saint-Venant system.
+\end{remark}
+
+\section{The six equations written out}
+
+Writing $(x,y,z)$ for $(x_1,x_2,x_3)$, the diagonal components of $\Inc(\teps)$ give
+\begin{align}
+  \pd{^2\eps_{xx}}{y^2}+\pd{^2\eps_{yy}}{x^2} &= 2\,\pdd{\eps_{xy}}{x}{y}, &
+  \pd{^2\eps_{yy}}{z^2}+\pd{^2\eps_{zz}}{y^2} &= 2\,\pdd{\eps_{yz}}{y}{z}, &
+  \pd{^2\eps_{zz}}{x^2}+\pd{^2\eps_{xx}}{z^2} &= 2\,\pdd{\eps_{zx}}{z}{x},
+\end{align}
+and the off-diagonal components give
+\begin{align}
+  \pdd{\eps_{xx}}{y}{z} &= \pd{}{x}\left(-\pd{\eps_{yz}}{x}+\pd{\eps_{zx}}{y}+\pd{\eps_{xy}}{z}\right),\\
+  \pdd{\eps_{yy}}{z}{x} &= \pd{}{y}\left(-\pd{\eps_{zx}}{y}+\pd{\eps_{xy}}{z}+\pd{\eps_{yz}}{x}\right),\\
+  \pdd{\eps_{zz}}{x}{y} &= \pd{}{z}\left(-\pd{\eps_{xy}}{z}+\pd{\eps_{yz}}{x}+\pd{\eps_{zx}}{y}\right).
+\end{align}
+(For instance $\eta_{zz}=e_{zik}e_{zjl}\eps_{ij,kl}=\eps_{xx,yy}+\eps_{yy,xx}-2\eps_{xy,xy}$.)
+In plane strain only the first one remains: $\partial^2\eps_{xx}/\partial y^2+\partial^2\eps_{yy}/\partial x^2=2\,\partial^2\eps_{xy}/\partial x\,\partial y$.
+
+\section{Proof of sufficiency}
+
+\begin{lemma}[Poincaré]\label{lem:poincare}
+Let $\Omega$ be simply connected and $f_1,f_2,f_3\in C^1(\Omega)$ with $f_{k,l}=f_{l,k}$. Then there exists $\varphi\in C^2(\Omega)$ with $\varphi_{,k}=f_k$, unique up to an additive constant, given by
+$\varphi(\boldsymbol x)=\varphi(\boldsymbol x_0)+\int_{\boldsymbol x_0}^{\boldsymbol x} f_k\,dx_k$ (path-independent).
+\end{lemma}
+
+\begin{proof}[Proof of (b)]
+By Proposition~\ref{prop:equiv}, the hypothesis~\eqref{eq:compat} implies $C_{ijkl}=0$ for all indices. We reconstruct first the rotation, then the displacement.
+
+\smallskip
+\noindent\emph{Motivation.} If $\boldsymbol u$ exists, write $u_{i,j}=\eps_{ij}+\omega_{ij}$ with $\omega_{ij}=\frac12(u_{i,j}-u_{j,i})$ skew-symmetric. Then
+\begin{equation}\label{eq:omega-grad}
+  \omega_{ij,k}=\tfrac12\left(u_{i,jk}-u_{j,ik}\right)=\eps_{ik,j}-\eps_{jk,i},
+\end{equation}
+since $\eps_{ik,j}-\eps_{jk,i}=\frac12(u_{i,kj}+u_{k,ij}-u_{j,ki}-u_{k,ji})$. The gradient of $\omega$ depends on $\teps$ only; we reverse this.
+
+\smallskip
+\noindent\emph{Step 1: the rotation $\omega$.} For fixed $(i,j)$ let $f^{(ij)}_k:=\eps_{ik,j}-\eps_{jk,i}$. Then
+\[
+  f^{(ij)}_{k,l}-f^{(ij)}_{l,k}=\eps_{ik,jl}+\eps_{jl,ik}-\eps_{il,jk}-\eps_{jk,il}
+  = C_{ikjl}-C_{iljk},
+\]
+as one sees by expanding both $C$'s with~\eqref{eq:C} (the terms $\eps_{ij,kl}$ and $\eps_{kl,ij}$ cancel). This vanishes, so by Lemma~\ref{lem:poincare} there exist $\omega_{ij}\in C^2(\Omega)$ with
+$\omega_{ij,k}=\eps_{ik,j}-\eps_{jk,i}$ and $\omega_{ij}(\boldsymbol x_0)=\omega^0_{ij}$, where $\omega^0$ is any skew matrix. Since $f^{(ji)}=-f^{(ij)}$ and $\omega^0$ is skew, uniqueness gives $\omega_{ji}=-\omega_{ij}$.
+
+\smallskip
+\noindent\emph{Step 2: the displacement $\boldsymbol u$.} For fixed $i$ let $g^{(i)}_j:=\eps_{ij}+\omega_{ij}$. Then
+\[
+  g^{(i)}_{j,k}=\eps_{ij,k}+\eps_{ik,j}-\eps_{jk,i},
+\]
+which is symmetric in $(j,k)$. By Lemma~\ref{lem:poincare} there exists $u_i\in C^3(\Omega)$ with $u_{i,j}=\eps_{ij}+\omega_{ij}$ and $u_i(\boldsymbol x_0)=a_i$ arbitrary.
+
+\smallskip
+\noindent\emph{Step 3: verification.} By skew-symmetry of $\omega$:
+$\ \tfrac12(u_{i,j}+u_{j,i})=\tfrac12(\eps_{ij}+\omega_{ij}+\eps_{ji}+\omega_{ji})=\eps_{ij}.$
+
+\smallskip
+\noindent\emph{Step 4: uniqueness.} If $\boldsymbol u,\boldsymbol u'$ both give $\teps$, then $\boldsymbol w=\boldsymbol u-\boldsymbol u'$ has zero strain; by~\eqref{eq:omega-grad} its rotation has zero gradient, hence is a constant skew matrix on the connected set $\Omega$, and $w_{i,j}=\omega_{ij}$ gives $w_i=a_i+\omega_{ij}x_j$, i.e.\ $\boldsymbol w=\boldsymbol a+\boldsymbol b\times\boldsymbol x$. These are the six free constants $\omega^0$, $\boldsymbol a$ of Steps 1--2.
+\end{proof}
+
+\begin{remark}[Role of simple connectivity]
+On a multiply connected domain (e.g.\ a hollow cylinder) the line integrals of Lemma~\ref{lem:poincare} may depend on the path around a hole: a field satisfying~\eqref{eq:compat} may then give a \emph{multivalued} displacement (Volterra dislocations). Single-valuedness requires in addition that $\oint f^{(ij)}_k\,dx_k=0$ and $\oint g^{(i)}_j\,dx_j=0$ around each independent loop.
+\end{remark}
+
+\end{document}
