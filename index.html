@@ -36,8 +36,8 @@ body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
 .wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:28px 48px;display:grid;gap:22px}
 header{display:grid;gap:8px}
 .eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-h1{font:800 clamp(26px,4vw,40px)/1.08 var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance;max-width:24ch}
-.lede{margin:0;max-width:68ch;color:var(--muted)}
+h1{font:800 clamp(26px,4vw,40px)/1.08 var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.lede{margin:0;color:var(--muted)}
 .lede b{color:var(--fg);font-weight:600}
 
 .tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line)}
@@ -249,7 +249,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     <div class="main">
       <div class="panel">
         <svg class="fig stage" viewBox="0 0 800 290" role="img" aria-label="Fibre composite loaded in tension"></svg>
-        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:repeating-linear-gradient(45deg,var(--plas) 0 2px,transparent 2px 5px)"></i>plastic strain</span><span>fibre and matrix colour scales differ · strains ×15</span></div>
+        <div class="legend"><span><i style="background:var(--ten)"></i>tension</span><span><i style="background:var(--com)"></i>compression</span><span><i style="background:repeating-linear-gradient(45deg,var(--plas) 0 2px,transparent 2px 5px)"></i>plastic strain</span><span id="s5-leg">fibre and matrix colour scales differ · strains ×15</span></div>
       </div>
       <div class="panel">
         <svg class="fig plot" viewBox="0 0 800 290" role="img" aria-label="Stresses in fibres and matrix versus strain"></svg>
@@ -265,14 +265,15 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       <div class="panel caption" aria-live="polite"></div>
       <div class="panel params">
         <h3>Parameters</h3>
+        <div class="seg" role="group" aria-label="Model"><button type="button" class="btn segb" id="s5-mode-par" aria-pressed="true">Iso-strain (parallel)</button><button type="button" class="btn segb" id="s5-mode-ser" aria-pressed="false">Iso-stress (series)</button></div>
         <div class="param"><label for="s5-f">Fibre volume fraction f <output id="s5-f-o"></output></label><input type="range" id="s5-f" min="0.1" max="0.6" step="0.05" value="0.3"></div>
         <div class="param"><label for="s5-e">Maximum strain ε̃ <output id="s5-e-o"></output></label><input type="range" id="s5-e" min="0.1" max="1" step="0.05" value="0.5"></div>
-        <p class="note">Fibres: E<sub>f</sub> = 400 GPa, elastic · matrix: E<sub>m</sub> = 70 GPa, σ<sub>y</sub> = 100 MPa, elastic perfectly plastic · loaded along the fibres (iso-strain)</p>
+        <p class="note" id="s5-note">Fibres: E<sub>f</sub> = 400 GPa, elastic · matrix: E<sub>m</sub> = 70 GPa, σ<sub>y</sub> = 100 MPa, elastic perfectly plastic · loaded along the fibres (iso-strain)</p>
       </div>
     </aside>
   </section>
 
-  <footer>Bar problem after Korsunsky (2017), as in the course slides. The other cases use classical solutions: Lamé thick cylinders for frettage, a rectangular elastic–perfectly plastic section for bending, Timoshenko-type beam theory for the bimetallic strip and Stoney's formula for the thin film, and an iso-strain model for the composite.<br><br><b>Author:</b> Dr Régis Kubler, Arts et Métiers Institute of Technology. Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.<br><b>Cite as:</b> Kubler, R. (2026). <i>Eigenstrain &amp; Residual Stress Simulator</i>. Arts et Métiers Institute of Technology. Zenodo. DOI: to be given. · MIT License</footer>
+  <footer>Bar problem after Korsunsky (2017), as in the course slides. The other cases use classical solutions: Lamé thick cylinders for frettage, a rectangular elastic–perfectly plastic section for bending, Timoshenko-type beam theory for the bimetallic strip and Stoney's formula for the thin film, and iso-strain (Voigt) and iso-stress (Reuss) models for the composite.<br><br><b>Author:</b> Dr Régis Kubler, Arts et Métiers Institute of Technology. Developed with the assistance of Claude Opus 5.5 (Anthropic), October 2026.<br><b>Cite as:</b> Kubler, R. (2026). <i>Eigenstrain &amp; Residual Stress Simulator</i>. Arts et Métiers Institute of Technology. Zenodo. DOI: to be given. · MIT License</footer>
 </div>
 
 <script>
@@ -667,13 +668,13 @@ const S3=(function(){
       for(let q=0;q<=30;q++){const x=cx-half+2*half*q/30, dy=-kd*(x-cx)*(x-cx);top.push([x,cy+e0*H+dy+off]);bot.push([x,cy+e1*H+dy+off]);}
       const d=pathOf(top.concat(bot.reverse()))+'Z';
       g+=`<path d="${d}" style="fill:${sFill(sigFn(em),sy)};stroke:${sFill(sigFn(em),sy)};stroke-width:.6"/>`;
-      if(plasticFn(em))g+=`<path d="${d}" style="fill:url(#hatch2)"/>`;
+      if(plasticFn(em))g+=`<path d="${d}" style="fill:url(#hatch3)"/>`;
     }
     return g;
   }
   function draw(i,k){
     const e=ease(k), xt=mt>1?xi(mt):9;
-    let g=HATCH, sig, kap, mNow, q=0;
+    let g=HATCH.replace('hatch2','hatch3'), sig, kap, mNow, q=0;
     if(i===0){mNow=mt*e;sig=eta=>sLoad(eta,mNow);kap=kLoad(mNow);
       const xn=mNow>1?xi(mNow):9;
       g+=strips(kap*K0,()=>0,sig,0,eta=>Math.abs(eta)>xn);}
@@ -840,7 +841,7 @@ const S4=(function(){
 })();
 
 /* =========================================================
-   Scene 6 — elastoplastic composite (iso-strain)
+   Scene 6 — elastoplastic composite (iso-strain / iso-stress)
    ========================================================= */
 const S5=(function(){
   const root=document.getElementById('s5'), svg=root.querySelector('.stage'), plot=root.querySelector('.plot');
@@ -860,7 +861,8 @@ const S5=(function(){
   const x0=110, Lb=380, top=72, H=150, amp=15;
   let st={};
   function bands(){const hf=H*f/3, hm=H*(1-f)/4, out=[];let y=top;for(let j=0;j<7;j++){const fib=j%2===1,h=fib?hf:hm;out.push({fib,y,h});y+=h;}return out;}
-  function draw(i,k){
+  function draw(i,k){if(mode==='ser')return drawSeries(i,k);return drawPar(i,k);}
+  function drawPar(i,k){
     const e=ease(k), R=unload(1);
     let cur, lenF, lenM, sF, sM, gap=0, force;
     if(i===0){cur=load(eMax*e);lenF=lenM=cur.e;sF=cur.sf;sM=cur.sm;force=cur.sb;}
@@ -869,7 +871,7 @@ const S5=(function(){
     else{cur=R;lenF=lerp(0,R.e,e);lenM=lerp(R.ep,R.e,e);sF=R.sf*e;sM=R.sm*e;gap=6*(1-e);force=0;}
     st={i,k:e,cur};
     const plastic=i===0?cur.ep>1e-9:load(eMax).ep>1e-9;
-    let g=HATCH;
+    let g=HATCH.replace('hatch2','hatch5');
     // grip
     g+=`<line x1="${x0}" y1="${top-16}" x2="${x0}" y2="${top+H+30}" style="stroke:var(--fg);stroke-width:2.5"/>`;
     for(let yy=top-10;yy<top+H+30;yy+=13)g+=`<line x1="${x0}" y1="${yy}" x2="${x0-12}" y2="${yy-10}" style="stroke:var(--fg);stroke-width:1.2"/>`;
@@ -877,7 +879,7 @@ const S5=(function(){
     bands().forEach((b,j)=>{
       const off=(j-3)*gap, w=Lb*(1+amp*(b.fib?lenF:lenM)), c=b.fib?sFill(sF,sfScale):sFill(sM,sy);
       g+=`<rect x="${x0}" y="${b.y+off}" width="${w}" height="${b.h}" style="fill:${c};stroke:var(--fg);stroke-opacity:${b.fib?.6:.25}"/>`;
-      if(!b.fib&&plastic)g+=`<rect x="${x0}" y="${b.y+off}" width="${w}" height="${b.h}" style="fill:url(#hatch2);opacity:.75"/>`;
+      if(!b.fib&&plastic)g+=`<rect x="${x0}" y="${b.y+off}" width="${w}" height="${b.h}" style="fill:url(#hatch5);opacity:.75"/>`;
     });
     const bs=bands(), wF=Lb*(1+amp*lenF), wM=Lb*(1+amp*lenM);
     g+=T(x0+12,bs[1].y+bs[1].h/2+5+(-2)*gap,'fibre','sm')+T(x0+12,bs[0].y+bs[0].h/2+5-3*gap,'matrix','sm');
@@ -914,11 +916,92 @@ const S5=(function(){
     [['σ fibres','var(--ten)'],['σ̄ composite','var(--fg)','2 5']].forEach((l,j)=>{const y=pA.y0+32+j*18;g+=`<line x1="${pA.x0+8}" y1="${y}" x2="${pA.x0+36}" y2="${y}" style="stroke:${l[1]};stroke-width:3;${l[2]?'stroke-dasharray:'+l[2]:''}"/>`+T(pA.x0+42,y+4,l[0],'sm');});
     plot.innerHTML=g;
   }
+  /* ---------- iso-stress (series) mode ---------- */
+  let mode='par';
+  const bP=document.getElementById('s5-mode-par'), bSr=document.getElementById('s5-mode-ser'), noteC=document.getElementById('s5-note'), legC=document.getElementById('s5-leg');
+  function setModeC(m){mode=m;bP.setAttribute('aria-pressed',m==='par');bSr.setAttribute('aria-pressed',m==='ser');
+    noteC.innerHTML=m==='par'?'Fibres: E<sub>f</sub> = 400 GPa, elastic · matrix: E<sub>m</sub> = 70 GPa, σ<sub>y</sub> = 100 MPa, elastic perfectly plastic · loaded along the fibres (iso-strain, Voigt)'
+      :'Same phases in series: layers stacked across the load (iso-stress, Reuss) · E<sub>f</sub> = 400 GPa · E<sub>m</sub> = 70 GPa, σ<sub>y</sub> = 100 MPa';
+    legC.textContent=m==='par'?'fibre and matrix colour scales differ · strains ×15':'same stress in every layer · strains ×15';
+    P.refresh();}
+  bP.addEventListener('click',()=>setModeC('par')); bSr.addEventListener('click',()=>setModeC('ser'));
+  const ER=()=>1/(f/Ef+(1-f)/Em);
+  function loadS(e){const ey=sy/ER();let s,ep;if(e<=ey){s=ER()*e;ep=0;}else{s=sy;ep=(e-ey)/(1-f);}return{e,s,ep,ef:s/Ef,em:s/Em+ep};}
+  function unloadS(q){const m=loadS(eMax),s=m.s*(1-q),ep=m.ep,ef=s/Ef,em=s/Em+ep;return{e:f*ef+(1-f)*em,s,ep,ef,em};}
+  function drawSeries(i,k){
+    const e=ease(k), R=unloadS(1);
+    let cur, gapS=0;
+    if(i===0)cur=loadS(eMax*e); else if(i===1)cur=unloadS(e); else cur=R;
+    if(i===2)gapS=7*e; if(i===3)gapS=7*(1-e);
+    stS={i,k:e,cur};
+    const plastic=loadS(i===0?cur.e:eMax).ep>1e-12;
+    let g=HATCH.replace('hatch2','hatch5');
+    const LbS=320, yb=top+40, hb=70, nM=5, nF=4, wM0=LbS*(1-f)/nM, wF0=LbS*f/nF;
+    g+=`<line x1="${x0}" y1="${yb-26}" x2="${x0}" y2="${yb+hb+26}" style="stroke:var(--fg);stroke-width:2.5"/>`;
+    for(let yy=yb-20;yy<yb+hb+26;yy+=13)g+=`<line x1="${x0}" y1="${yy}" x2="${x0-12}" y2="${yy-10}" style="stroke:var(--fg);stroke-width:1.2"/>`;
+    let x=x0;
+    for(let j=0;j<nM+nF;j++){
+      const fib=j%2===1, w=(fib?wF0:wM0)*(1+amp*(fib?cur.ef:cur.em)), c=sFill(i<=1?cur.s:0,sy);
+      if(j>0)x+=gapS;
+      g+=`<rect x="${x}" y="${yb}" width="${w}" height="${hb}" style="fill:${c};stroke:var(--fg);stroke-opacity:${fib?.6:.3}"/>`;
+      if(fib)g+=`<rect x="${x}" y="${yb}" width="${w}" height="${hb}" style="fill:var(--ten);fill-opacity:.12"/>`;
+      if(!fib&&plastic)g+=`<rect x="${x}" y="${yb}" width="${w}" height="${hb}" style="fill:url(#hatch5);opacity:.75"/>`;
+      x+=w;
+    }
+    g+=T(x0+wM0/2,yb+hb+20,'matrix','sm','middle')+T(x0+wM0+wF0/2,yb-10,'fibre','sm','middle');
+    // original length marker
+    g+=`<line x1="${x0+LbS}" y1="${yb-18}" x2="${x0+LbS}" y2="${yb+hb+18}" style="stroke:var(--muted);stroke-dasharray:4 4"/>`+T(x0+LbS,yb-24,'L','sm','middle');
+    if(i<=1){g+=`<rect x="${x}" y="${yb-8}" width="8" height="${hb+16}" style="fill:var(--fg)"/>`;
+      if(cur.s>1){const fl=cur.s/sy*70+10;g+=arrow(x+12,yb+hb/2,x+12+fl,yb+hb/2,'var(--fg)',3.5)+T(x+18+fl,yb+hb/2+5,'F','big');}}
+    if(i>=2&&x-x0-LbS>2){const y=yb+hb+42;g+=`<line x1="${x0+LbS}" y1="${y}" x2="${x}" y2="${y}" style="stroke:var(--accent);stroke-width:2.5"/>`+T(x+8,y+5,'permanent strain (1−f)εp·L','sm');}
+    if(i===2&&e>.6)g+=T(x0+LbS/2,yb-34,'separated: every layer keeps its length, nothing moves','sm','middle');
+    if(i===3&&e>.6)g+=T(x0+LbS/2,yb-34,'rebonded: no misfit to close, no stress','sm','middle');
+    const rows=[['ε̄ (%)',(cur.e*100).toFixed(3)],['σ̄ = F/A (MPa)',f0(i<=1?cur.s:0)],['σ fibres (MPa)',f0(i<=1?cur.s:0)],['σ matrix (MPa)',f0(i<=1?cur.s:0)]];
+    rows.forEach((r,j)=>{g+=T(600,top+12+j*24,r[0],'sm')+T(790,top+12+j*24,r[1],'lbl','end');});
+    svg.innerHTML=g;
+    drawPlotSeries();
+  }
+  let stS={};
+  function drawPlotSeries(){
+    const m=loadS(eMax), Lp=load(eMax);
+    const pA={x0:70,x1:380,y0:24,y1:250}, pB={x0:480,x1:780,y0:24,y1:250};
+    const xmA=0.01, yAmax=Math.max(200,Lp.sb*1.12);
+    const XA=e=>pA.x0+e/xmA*(pA.x1-pA.x0), YA=v=>pA.y1-(v+0.05*yAmax)/(1.05*yAmax)*(pA.y1-pA.y0);
+    const xmB=Math.max(0.01,m.em*1.1), XB=e=>pB.x0+e/xmB*(pB.x1-pB.x0), YB=v=>pB.y1-(v+20)/(140)*(pB.y1-pB.y0);
+    const step=yAmax>1200?500:(yAmax>500?200:50), yt=[];for(let v=0;v<=yAmax;v+=step)yt.push(v);
+    const xtB=[];for(let v=0;v<=xmB+1e-9;v+=xmB>0.02?0.005:0.0025)xtB.push(v);
+    let g=axes({...pA,X:XA,Y:YA,xt:[0,.0025,.005,.0075,.01],yt,xf:v=>(v*100).toFixed(2),yf:f0,xl:'mean strain ε̄ (%)',yl:'MPa'});
+    g+=axes({...pB,X:XB,Y:YB,xt:xtB,yt:[0,50,100],xf:v=>(v*100).toFixed(2),yf:f0,xl:'phase strain (%)',yl:'MPa'});
+    g+=T(pA.x0+6,pA.y0+12,'composite: series vs parallel','sm')+T(pB.x0+6,pB.y0+12,'each phase (same stress)','sm');
+    g+=`<line x1="${pB.x0}" y1="${YB(sy)}" x2="${pB.x1}" y2="${YB(sy)}" style="stroke:var(--accent);stroke-dasharray:5 4"/>`+T(pB.x1-4,YB(sy)-6,'σy','sm','end');
+    // parallel reference (faint)
+    const LP=[];for(let j=0;j<=60;j++)LP.push(load(eMax*j/60));
+    g+=crv(LP.map(p=>[XA(p.e),YA(p.sb)]),'var(--muted)','2 5',2);
+    const U=[];for(let j=0;j<=30;j++)U.push(unload(j/30));g+=crv(U.map(p=>[XA(p.e),YA(p.sb)]),'var(--muted)','2 5',1.2);
+    // series curve
+    const c=stS.cur, eNow=stS.i===0?c.e:eMax, LS=[];for(let j=0;j<=80;j++)LS.push(loadS(eNow*j/80));
+    g+=crv(LS.map(p=>[XA(p.e),YA(p.s)]),'var(--accent)');
+    g+=crv(LS.map(p=>[XB(p.em),YB(p.s)]),'var(--com)')+crv(LS.map(p=>[XB(p.ef),YB(p.s)]),'var(--ten)');
+    if(stS.i>=1){const q=stS.i===1?stS.k:1,V=[];for(let j=0;j<=30;j++)V.push(unloadS(q*j/30));
+      g+=crv(V.map(p=>[XA(p.e),YA(p.s)]),'var(--accent)','6 4',2.5)+crv(V.map(p=>[XB(p.em),YB(p.s)]),'var(--com)','6 4',2)+crv(V.map(p=>[XB(p.ef),YB(p.s)]),'var(--ten)','6 4',2);}
+    const cs=stS.i<=1?c.s:0;
+    g+=dot(XA(c.e),YA(cs),'var(--accent)',6)+dot(XB(c.em),YB(cs),'var(--com)')+dot(XB(c.ef),YB(cs),'var(--ten)');
+    if(stS.i>=2)g+=T(XA(c.e)+8,YA(yAmax*0.3),`ε̄res = ${(c.e*100).toFixed(3)} %, σ = 0`,'lbl');
+    [['series (iso-stress)','var(--accent)'],['parallel (iso-strain)','var(--muted)','2 5']].forEach((l,j)=>{const y=(pA.y0+pA.y1)/2-10+j*18;g+=`<line x1="${pA.x0+185}" y1="${y}" x2="${pA.x0+213}" y2="${y}" style="stroke:${l[1]};stroke-width:3;${l[2]?'stroke-dasharray:'+l[2]:''}"/>`+T(pA.x0+219,y+4,l[0],'sm');});
+    [['matrix','var(--com)'],['fibres','var(--ten)']].forEach((l,j)=>{const y=YB(48)+j*18;g+=`<line x1="${pB.x0+60}" y1="${y}" x2="${pB.x0+88}" y2="${y}" style="stroke:${l[1]};stroke-width:3"/>`+T(pB.x0+94,y+4,l[0],'sm');});
+    plot.innerHTML=g;
+  }
+  const serCaps=[
+    ()=>{const c=stS.cur||loadS(0);return `<p>Same phases, now <b>in series</b>: every layer carries the same stress (iso-stress, Reuss) and the lengths add, <span class="eq">ε̄ = f ε_f + (1−f) ε_m</span>.</p><p>Elastic modulus <span class="eq">1/E_R = f/E_f + (1−f)/E_m</span>, E_R = ${(ER()/1000).toFixed(1)} GPa. The matrix yields at <span class="eq">σ̄ = σy</span> and then imposes σy on the whole bar: the fibres add stiffness, not strength.</p><p>Now ε̄ = ${(c.e*100).toFixed(3)} %, σ̄ = ${f0(c.s)} MPa.</p>`;},
+    ()=>{const R=unloadS(1);return `<p>The force is removed. Unloading is elastic (modulus E_R) and every layer returns to <b>σ = 0</b>: no reverse yielding, no residual stress.</p><p>The bar keeps a permanent strain <span class="eq">ε̄res = (1−f) εp = ${(R.e*100).toFixed(3)} %</span>.</p>`;},
+    ()=>{const R=unloadS(1);return `<p>Separate the layers. Nothing moves: each layer already has its stress-free length, the matrix layers longer by <span class="eq">εp = ${(R.ep*100).toFixed(3)} %</span>.</p><p>The eigenstrain jumps <b>along</b> x, so <span class="eq">Inc(ε*) = 0</span>: it is <b>compatible</b> (with a free end).</p>`;},
+    ()=>`<p>Rebonded, the layers fit end to end with no misfit: no elastic strain, no stress. A compatible eigenstrain only changes the shape.</p><p>Compare with the parallel case: there, the jump of ε* is <b>across</b> x and the eigenstrain is incompatible. Holding both ends would make it incompatible here too: that is the constrained bar of tab 2.</p>`
+  ];
   const phases=[
-    {name:'Load in tension',dur:5.5,live:true,cap:()=>{const c=st.cur||load(0);return `<p>Fibres and matrix are bonded side by side and share the same strain (iso-strain). The matrix yields at <span class="eq">ε = σy/Eₘ = 0.143 %</span>; beyond, the fibres carry all the extra load.</p><p><span class="eq">σ̄ = f σf + (1−f) σm</span></p><p>Now ε = ${(c.e*100).toFixed(3)} %, matrix ${c.ep>0?'<b>plastic</b>':'elastic'}.</p>`;}},
-    {name:'Unload: F → 0',dur:3,live:true,cap:()=>{const R=unload(1);return `<p>The force is removed. Both phases unload elastically together, with the composite modulus <span class="eq">E_c = fE_f + (1−f)Eₘ</span>, so the matrix drops into compression.</p>${R.rev?'<p>Here it even reaches <b>−σy and yields in reverse</b>, which is why fibre composites show a strong Bauschinger effect.</p>':''}<p>Residual: fibres <span class="eq">${f0(R.sf)} MPa</span>, matrix <span class="eq">${f0(R.sm)} MPa</span>.</p>`;}},
-    {name:'Separate the phases',dur:2.8,cap:()=>{const R=unload(1);return `<p>Debond the phases in thought. The elastic fibres return to their initial length; the matrix keeps its plastic strain <span class="eq">εp = ${(R.ep*100).toFixed(3)} %</span>.</p><p>The matrix is now longer than the fibres: the eigenstrain is incompatible.</p>`;}},
-    {name:'Bond them again',dur:3,cap:()=>{const R=unload(1);return `<p>Bonded again, both phases share one length (compatibility) and the net force is zero (equilibrium):</p><p><span class="eq">f σf + (1−f) σm = 0</span></p><p><span class="eq">σm = −f E_f Eₘ εp / E_c = ${f0(R.sm)} MPa</span>, <span class="eq">σf = ${f0(R.sf)} MPa</span>.</p><p>Same mechanism as the bar, with the parts in parallel instead of in series.</p>`;}}
+    {name:'Load in tension',dur:5.5,live:true,cap:()=>{if(mode==='ser')return serCaps[0]();const c=st.cur||load(0);return `<p>Fibres and matrix are bonded side by side and share the same strain (iso-strain). The matrix yields at <span class="eq">ε = σy/Eₘ = 0.143 %</span>; beyond, the fibres carry all the extra load.</p><p><span class="eq">σ̄ = f σf + (1−f) σm</span></p><p>Now ε = ${(c.e*100).toFixed(3)} %, matrix ${c.ep>0?'<b>plastic</b>':'elastic'}.</p>`;}},
+    {name:'Unload: F → 0',dur:3,live:true,cap:()=>{if(mode==='ser')return serCaps[1]();const R=unload(1);return `<p>The force is removed. Both phases unload elastically together, with the composite modulus <span class="eq">E_c = fE_f + (1−f)Eₘ</span>, so the matrix drops into compression.</p>${R.rev?'<p>Here it even reaches <b>−σy and yields in reverse</b>, which is why fibre composites show a strong Bauschinger effect.</p>':''}<p>Residual: fibres <span class="eq">${f0(R.sf)} MPa</span>, matrix <span class="eq">${f0(R.sm)} MPa</span>.</p>`;}},
+    {name:'Separate the phases',dur:2.8,cap:()=>{if(mode==='ser')return serCaps[2]();const R=unload(1);return `<p>Debond the phases in thought. The elastic fibres return to their initial length; the matrix keeps its plastic strain <span class="eq">εp = ${(R.ep*100).toFixed(3)} %</span>.</p><p>The matrix is now longer than the fibres: the eigenstrain is incompatible.</p>`;}},
+    {name:'Bond them again',dur:3,cap:()=>{if(mode==='ser')return serCaps[3]();const R=unload(1);return `<p>Bonded again, both phases share one length (compatibility) and the net force is zero (equilibrium):</p><p><span class="eq">f σf + (1−f) σm = 0</span></p><p><span class="eq">σm = −f E_f Eₘ εp / E_c = ${f0(R.sm)} MPa</span>, <span class="eq">σf = ${f0(R.sf)} MPa</span>.</p><p>Same mechanism as the bar, with the parts in parallel instead of in series.</p>`;}}
   ];
   const P=Player(root,phases,draw);
   return P;
